@@ -1,0 +1,26 @@
+import apiClient from './client';
+import type { AuthResponse, LoginRequest, RefreshTokenRequest, UserSummaryResponse } from '@/types/auth';
+
+export async function login(data: LoginRequest): Promise<AuthResponse> {
+  const response = await apiClient.post<AuthResponse>('/auth/login', data);
+  return response.data;
+}
+
+export async function loginGoogle(idToken: string): Promise<AuthResponse> {
+  const response = await apiClient.post<AuthResponse>('/auth/google', { idToken });
+  return response.data;
+}
+
+export async function refresh(data: RefreshTokenRequest): Promise<AuthResponse> {
+  const response = await apiClient.post<AuthResponse>('/auth/refresh', data);
+  return response.data;
+}
+
+export async function logout(refreshToken: string): Promise<void> {
+  await apiClient.post('/auth/logout', { refreshToken });
+}
+
+export async function getCurrentUser(): Promise<UserSummaryResponse> {
+  const response = await apiClient.get<UserSummaryResponse>('/auth/me');
+  return response.data;
+}
