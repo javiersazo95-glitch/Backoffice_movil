@@ -1,37 +1,47 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 import { colors, radii, spacing, typography, minTapTarget } from '@/theme';
+import { Icon, IconName } from './Icon';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string | null;
   helperText?: string;
+  leftIcon?: IconName;
 }
 
-export function Input({ label, error, helperText, style, onFocus, onBlur, ...rest }: InputProps) {
+export function Input({ label, error, helperText, leftIcon, style, onFocus, onBlur, ...rest }: InputProps) {
   const [focused, setFocused] = useState(false);
 
   return (
     <View style={styles.wrapper}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <TextInput
+      <View
         style={[
-          styles.input,
+          styles.container,
           focused && styles.inputFocused,
-          error && styles.inputError,
-          style,
+          Boolean(error) && styles.inputError,
         ]}
-        placeholderTextColor={colors.textTertiary}
-        onFocus={(e) => {
-          setFocused(true);
-          onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          onBlur?.(e);
-        }}
-        {...rest}
-      />
+      >
+        {leftIcon ? (
+          <View style={styles.iconWrap}>
+            <Icon name={leftIcon} size={18} color={colors.textTertiary} />
+          </View>
+        ) : null}
+        <TextInput
+          style={[styles.input, leftIcon ? styles.inputWithIcon : null, style]}
+          placeholderTextColor={colors.textTertiary}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          {...rest}
+        />
+      </View>
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : helperText ? (
@@ -42,16 +52,32 @@ export function Input({ label, error, helperText, style, onFocus, onBlur, ...res
 }
 
 const styles = StyleSheet.create({
-  wrapper: { marginBottom: spacing.lg },
-  label: { ...typography.bodySm, color: colors.textSecondary, marginBottom: spacing.xs, fontWeight: '600' },
-  input: {
-    minHeight: minTapTarget,
-    borderWidth: 1,
-    borderColor: colors.border,
+  wrapper: { marginBottom: spacing.md },
+  label: { ...typography.bodySm, color: colors.textLabel, marginBottom: spacing.xs, fontWeight: '600' },
+  container: {
+    height: 44,
+    borderWidth: 1.5,
+    borderColor: colors.borderInput,
     borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
     backgroundColor: colors.surface,
-    ...typography.bodyLg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  iconWrap: {
+    width: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  input: {
+    flex: 1,
+    height: '100%',
+    ...typography.body,
+    color: colors.textPrimary,
+    paddingHorizontal: spacing.xs,
+  },
+  inputWithIcon: {
+    paddingLeft: spacing.xs,
   },
   inputFocused: { borderColor: colors.brand, borderWidth: 1.5 },
   inputError: { borderColor: colors.danger },

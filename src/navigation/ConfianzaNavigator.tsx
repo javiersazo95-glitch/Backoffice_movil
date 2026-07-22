@@ -9,9 +9,9 @@ import { SellerDetailScreen } from '@/features/trust-safety/sellers/SellerDetail
 import { ValidationListScreen } from '@/features/trust-safety/validations/ValidationListScreen';
 import { MediationListScreen } from '@/features/trust-safety/mediations/MediationListScreen';
 import { MediationDetailScreen } from '@/features/trust-safety/mediations/MediationDetailScreen';
-import { AlertsListScreen } from '@/features/trust-safety/alerts/AlertsListScreen';
-import { AuditListScreen } from '@/features/trust-safety/audit/AuditListScreen';
 import { ReportsListScreen } from '@/features/trust-safety/reports/ReportsListScreen';
+import { CustomDrawerContent } from '@/components/layout/CustomDrawerContent';
+import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 
 const Drawer = createDrawerNavigator();
 const SellersStack = createNativeStackNavigator();
@@ -39,19 +39,19 @@ export function ConfianzaNavigator() {
   return (
     <AreaGuard area="MEDIACION_CONFIANZA">
       <Drawer.Navigator
+        drawerContent={(props) => <CustomDrawerContent {...props} areaTitle="Confianza y Mediación" />}
         screenOptions={{
           headerTintColor: colors.textPrimary,
           drawerActiveTintColor: colors.brand,
           drawerActiveBackgroundColor: colors.brandSoft,
+          headerRight: () => <HeaderHomeButton />,
         }}
       >
         <Drawer.Screen name="Dashboard" component={TrustDashboardScreen} />
         <Drawer.Screen name="Vendedores" component={SellersStackNavigator} options={{ headerShown: false }} />
-        <Drawer.Screen name="Validaciones" component={ValidationListScreen} />
+        <Drawer.Screen name="Validaciones" component={ValidationListScreen} options={{ headerShown: false }} />
         <Drawer.Screen name="Mediaciones" component={MediationsStackNavigator} options={{ headerShown: false }} />
-        <Drawer.Screen name="Alertas" component={AlertsListScreen} />
-        <Drawer.Screen name="Bitácora" component={AuditListScreen} />
-        <Drawer.Screen name="Reportes" component={ReportsListScreen} />
+        <Drawer.Screen name="Reportes" component={ReportsListScreen} options={{ headerShown: false }} />
       </Drawer.Navigator>
     </AreaGuard>
   );

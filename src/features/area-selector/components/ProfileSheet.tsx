@@ -1,12 +1,13 @@
-import React, { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, spacing, typography } from '@/theme';
-import { Avatar, Button } from '@/components/shared';
+import { Avatar, Button, Icon } from '@/components/shared';
 import { Role, type UserSummaryResponse } from '@/types/auth';
 
 export interface ProfileSheetHandle {
   open: () => void;
+  close: () => void;
 }
 
 interface ProfileSheetProps {
@@ -22,43 +23,79 @@ function roleLabel(role?: Role | null): string {
 }
 
 export const ProfileSheet = forwardRef<ProfileSheetHandle, ProfileSheetProps>(({ user, onLogout }, ref) => {
-  const sheetRef = useRef<BottomSheetModal>(null);
+  const insets = useSafeAreaInsets();
+  const [visible, setVisible] = useState(false);
 
   useImperativeHandle(ref, () => ({
-    open: () => sheetRef.current?.present(),
+    open: () => setVisible(true),
+    close: () => setVisible(false),
   }));
 
-  const snapPoints = useMemo(() => ['32%'], []);
+  const bottomPadding = Math.max(insets.bottom, spacing.md) + spacing.md;
 
   return (
-    <BottomSheetModal ref={sheetRef} snapPoints={snapPoints} enablePanDownToClose backgroundStyle={styles.sheetBg}>
-      <BottomSheetView style={styles.container}>
-        <View style={styles.profileRow}>
-          <Avatar initials={user?.initials ?? 'AR'} size={48} />
-          <View style={styles.texts}>
-            <Text style={typography.subtitle}>{user?.fullName ?? 'Usuario backoffice'}</Text>
-            <Text style={typography.bodySm}>{roleLabel(user?.role)}</Text>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => setVisible(false)}>
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={() => setVisible(false)} />
+        <View style={[styles.container, { paddingBottom: bottomPadding }]}>
+          <View style={styles.headerRow}>
+            <Text style={typography.title}>Perfil de Usuario</Text>
+            <Pressable onPress={() => setVisible(false)} hitSlop={12}>
+              <Icon name="close" size={20} color={colors.textSecondary} />
+            </Pressable>
           </View>
+
+          <View style={styles.profileRow}>
+            <Avatar initials={user?.initials ?? 'AR'} size={48} />
+            <View style={styles.texts}>
+              <Text style={typography.subtitle}>{user?.fullName ?? 'Usuario backoffice'}</Text>
+              <Text style={typography.bodySm}>{roleLabel(user?.role)}</Text>
+            </View>
+          </View>
+          <Button
+            label="Cerrar sesión"
+            variant="danger"
+            fullWidth
+            onPress={() => {
+              setVisible(false);
+              onLogout();
+            }}
+          />
         </View>
-        <Button
-          label="Cerrar sesión"
-          variant="danger"
-          fullWidth
-          onPress={() => {
-            sheetRef.current?.dismiss();
-            onLogout();
-          }}
-        />
-      </BottomSheetView>
-    </BottomSheetModal>
+      </View>
+    </Modal>
   );
 });
 
 ProfileSheet.displayName = 'ProfileSheet';
 
 const styles = StyleSheet.create({
-  sheetBg: { backgroundColor: colors.surface, borderTopLeftRadius: radii.xl, borderTopRightRadius: radii.xl },
-  container: { padding: spacing.xl, gap: spacing.xl },
+  overlay: {
+    flex: 1,
+    backgroundColor: colors.overlay,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+  },
+  container: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    gap: spacing.lg,
+    elevation: 8,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   texts: { gap: spacing.xxs },
 });

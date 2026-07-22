@@ -5,6 +5,30 @@ export enum ValidationStatus {
   POR_CORREGIR = 'POR_CORREGIR',
 }
 
+export interface ValidationDocumentItem {
+  id: number;
+  name: string;
+  url?: string;
+  status: ValidationStatus;
+  notes?: string;
+}
+
+export interface StoreValidationRequest {
+  id: number;
+  sellerId: number;
+  sellerName: string;
+  representativeName: string;
+  rut: string;
+  email: string;
+  phone: string;
+  regionCity: string;
+  status: ValidationStatus;
+  createdAt: string;
+  dueAt: string;
+  documents: ValidationDocumentItem[];
+  notes?: string;
+}
+
 export interface ValidationResponse {
   id: number;
   sellerId: number;

@@ -8,6 +8,8 @@ import { LiquidacionesScreen } from '@/features/administration/screens/Liquidaci
 import { GastosScreen } from '@/features/administration/screens/GastosScreen';
 import { HistorialRetirosScreen } from '@/features/administration/screens/HistorialRetirosScreen';
 import { PagosScreen } from '@/features/administration/screens/PagosScreen';
+import { CustomDrawerContent } from '@/components/layout/CustomDrawerContent';
+import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 
 const Drawer = createDrawerNavigator();
 
@@ -15,10 +17,12 @@ export function AdministracionNavigator() {
   return (
     <AreaGuard area="ADMINISTRACION_CONTABLE">
       <Drawer.Navigator
+        drawerContent={(props) => <CustomDrawerContent {...props} areaTitle="Administración Contable" />}
         screenOptions={{
           headerTintColor: colors.textPrimary,
           drawerActiveTintColor: colors.brand,
           drawerActiveBackgroundColor: colors.brandSoft,
+          headerRight: () => <HeaderHomeButton />,
         }}
       >
         <Drawer.Screen name="Resumen" component={ResumenScreen} />

@@ -126,7 +126,20 @@ export function UsersListView() {
         />
       )}
 
-      <FilterSheet ref={filterSheetRef} groups={groups} onApply={() => setPage(0)} onClear={() => { setArea('All'); setSlot('All'); setPage(0); }} />
+      <FilterSheet
+        ref={filterSheetRef}
+        groups={groups}
+        onApply={(selected) => {
+          setArea((selected.area as BackofficeArea) ?? 'All');
+          setSlot((selected.slot as BackofficePermissionSlot) ?? 'All');
+          setPage(0);
+        }}
+        onClear={() => {
+          setArea('All');
+          setSlot('All');
+          setPage(0);
+        }}
+      />
     </View>
   );
 }

@@ -1,19 +1,22 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import * as adminApi from '@/api/administration';
 import type { RetiroAdminResponse, Settlement } from '@/types/administration';
 import {
   Badge,
+  Button,
   Card,
   EmptyState,
   ErrorState,
   Icon,
   LoadingState,
   ScreenContainer,
-  SegmentedTabs,
 } from '@/components/shared';
-import { colors, spacing, typography } from '@/theme';
+import { AppHeader } from '@/components/layout/AppHeader';
+import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
+import { colors, radii, spacing, toneColors } from '@/theme';
 import { formatCurrency } from '@/utils/formatters';
 import { getSettlements } from '../utils/settlements';
 import { LiquidationDocumentModal } from '../components/LiquidationDocumentModal';
@@ -39,6 +42,7 @@ function matchRetiro(withdrawals: RetiroAdminResponse[], group: SellerGroup): Re
 }
 
 export function LiquidacionesScreen() {
+  const navigation = useNavigation<any>();
   const [tab, setTab] = useState<Tab>('EN_LIQUIDACION');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [documentTarget, setDocumentTarget] = useState<RetiroAdminResponse | null>(null);
@@ -86,76 +90,109 @@ export function LiquidacionesScreen() {
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
   return (
-    <ScreenContainer>
-      <View style={styles.tabsWrap}>
-        <SegmentedTabs
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: 'EN_LIQUIDACION', label: 'En liquidación' },
-            { value: 'LIQUIDADO', label: 'Liquidado' },
-          ]}
+    <ScreenContainer padded={false}>
+      <AppHeader title="Liquidaciones a Vendedores" onBack={() => navigation.goBack()} right={<HeaderHomeButton />} />
+
+      <View style={styles.body}>
+        {/* Chips de Estado Fijos Arriba */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.quickFilterContainer}
+          contentContainerStyle={styles.quickFilterScroll}
+        >
+          <Pressable
+            style={[styles.quickChip, tab === 'EN_LIQUIDACION' && styles.quickChipActivePending]}
+            onPress={() => setTab('EN_LIQUIDACION')}
+          >
+            <Icon name="time" size={13} color={tab === 'EN_LIQUIDACION' ? colors.white : colors.warning} />
+            <Text style={[styles.quickChipText, tab === 'EN_LIQUIDACION' && styles.quickChipTextActive]}>⏳ En liquidación</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.quickChip, tab === 'LIQUIDADO' && styles.quickChipActiveDone]}
+            onPress={() => setTab('LIQUIDADO')}
+          >
+            <Icon name="checkmark-circle" size={13} color={tab === 'LIQUIDADO' ? colors.white : colors.success} />
+            <Text style={[styles.quickChipText, tab === 'LIQUIDADO' && styles.quickChipTextActive]}>✅ Liquidados</Text>
+          </Pressable>
+        </ScrollView>
+
+        <FlatList
+          style={{ flex: 1 }}
+          data={groups}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={<EmptyState title="Sin liquidaciones" description="No hay liquidaciones en este estado." />}
+          renderItem={({ item }) => {
+            const isExpanded = expanded.has(item.key);
+            const retiro = withdrawals ? matchRetiro(withdrawals, item) : undefined;
+
+            return (
+              <Card style={styles.card}>
+                {/* Cabecera Resumida Plegada */}
+                <Pressable
+                  style={styles.cardSummaryHeader}
+                  onPress={() =>
+                    setExpanded((current) => {
+                      const next = new Set(current);
+                      next.has(item.key) ? next.delete(item.key) : next.add(item.key);
+                      return next;
+                    })
+                  }
+                >
+                  <View style={styles.summaryTopRow}>
+                    <Text style={styles.sellerTitle}>{item.seller}</Text>
+                    <Badge label={tab === 'EN_LIQUIDACION' ? 'Pendiente' : 'Liquidado'} tone={tab === 'EN_LIQUIDACION' ? 'warning' : 'success'} />
+                  </View>
+
+                  <Text style={styles.summarySubText}>
+                    {item.settlements.length} transacciones por liquidar
+                  </Text>
+
+                  <View style={styles.summaryBottomRow}>
+                    <Text style={styles.totalText}>Monto Payout: <Text style={styles.totalHighlight}>{formatCurrency(item.total)}</Text></Text>
+                    <View style={styles.expandToggleBtn}>
+                      <Text style={styles.expandToggleText}>{isExpanded ? 'Ocultar ∧' : 'Ver Detalle ∨'}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+
+                {/* Contenido Desplegable al Presionar */}
+                {isExpanded ? (
+                  <View style={styles.expandedContent}>
+                    <View style={styles.sectionBox}>
+                      <Text style={styles.sectionTitle}>📋 Desglose de Vistas y Órdenes Incluidas</Text>
+                      {item.settlements.map((settlement) => (
+                        <View key={settlement.id} style={styles.settlementRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.settlementIdText}>#{settlement.id} · Pedido #{settlement.orderId}</Text>
+                            <Text style={styles.settlementSubText}>
+                              Venta total: {formatCurrency(settlement.saleTotal)} · Payout neto: {formatCurrency(settlement.sellerPayout)}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={styles.sectionBox}>
+                      <Text style={styles.sectionTitle}>📄 Documentos de Liquidación (Boleta / Factura)</Text>
+                      {retiro ? (
+                        <Button
+                          label={retiro.documentoLiquidacionCompleto ? '✅ Boleta/Factura Registrada (Ver/Editar)' : '📄 Emitir / Cargar Boleta o Factura'}
+                          variant={retiro.documentoLiquidacionCompleto ? 'secondary' : 'primary'}
+                          onPress={() => setDocumentTarget(retiro)}
+                        />
+                      ) : (
+                        <Badge label="Sin solicitud de retiro activa" tone="neutral" />
+                      )}
+                    </View>
+                  </View>
+                ) : null}
+              </Card>
+            );
+          }}
         />
       </View>
-
-      <FlatList
-        data={groups}
-        keyExtractor={(item) => item.key}
-        ListEmptyComponent={<EmptyState title="Sin liquidaciones" description="No hay liquidaciones en este estado." />}
-        renderItem={({ item }) => {
-          const isExpanded = expanded.has(item.key);
-          const retiro = withdrawals ? matchRetiro(withdrawals, item) : undefined;
-          return (
-            <Card style={styles.card}>
-              <Pressable
-                style={styles.headerRow}
-                onPress={() =>
-                  setExpanded((current) => {
-                    const next = new Set(current);
-                    next.has(item.key) ? next.delete(item.key) : next.add(item.key);
-                    return next;
-                  })
-                }
-              >
-                <View style={styles.headerTexts}>
-                  <Text style={typography.subtitle}>{item.seller}</Text>
-                  <Text style={typography.bodySm}>{item.settlements.length} liquidaciones · {formatCurrency(item.total)}</Text>
-                </View>
-                <Icon name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textTertiary} />
-              </Pressable>
-
-              {isExpanded ? (
-                <View style={styles.detailList}>
-                  {item.settlements.map((settlement) => (
-                    <View key={settlement.id} style={styles.detailRow}>
-                      <View style={styles.detailTexts}>
-                        <Text style={typography.bodySm}>{settlement.id} · Pedido {settlement.orderId}</Text>
-                        <Text style={typography.caption}>
-                          Venta {formatCurrency(settlement.saleTotal)} · Ganancia {formatCurrency(settlement.netSettlement)}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                  {retiro ? (
-                    <Pressable style={styles.docButton} onPress={() => setDocumentTarget(retiro)}>
-                      <Icon
-                        name={retiro.documentoLiquidacionCompleto ? 'checkmark-circle' : 'receipt-outline'}
-                        size={16}
-                        color={retiro.documentoLiquidacionCompleto ? colors.success : colors.brand}
-                      />
-                      <Text style={styles.docButtonText}>
-                        {retiro.documentoLiquidacionCompleto ? 'Boleta/factura registrada' : 'Emitir boleta o factura'}
-                      </Text>
-                    </Pressable>
-                  ) : (
-                    <Badge label="Sin retiro activo para emitir documento" tone="neutral" />
-                  )}
-                </View>
-              ) : null}
-            </Card>
-          );
-        }}
-      />
 
       <LiquidationDocumentModal visible={!!documentTarget} retiro={documentTarget} onClose={() => setDocumentTarget(null)} />
     </ScreenContainer>
@@ -163,13 +200,32 @@ export function LiquidacionesScreen() {
 }
 
 const styles = StyleSheet.create({
-  tabsWrap: { paddingTop: spacing.md, marginBottom: spacing.md },
-  card: { marginBottom: spacing.md },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerTexts: { gap: spacing.xxs },
-  detailList: { marginTop: spacing.md, gap: spacing.sm, borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: spacing.sm },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  detailTexts: { gap: spacing.xxs },
-  docButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  docButtonText: { ...typography.bodySm, color: colors.brand, fontWeight: '600', textTransform: 'none' },
+  body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
+  quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
+  quickChip: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, paddingHorizontal: spacing.md, height: 32,
+    borderRadius: radii.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+  },
+  quickChipActivePending: { backgroundColor: colors.warning, borderColor: colors.warning },
+  quickChipActiveDone: { backgroundColor: colors.success, borderColor: colors.success },
+  quickChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  quickChipTextActive: { color: colors.white },
+  listContent: { paddingBottom: spacing.huge },
+  card: { padding: 0, overflow: 'hidden', marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
+  cardSummaryHeader: { padding: spacing.md, backgroundColor: colors.surface },
+  summaryTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
+  sellerTitle: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  summarySubText: { fontSize: 12.5, color: colors.textSecondary, marginBottom: spacing.xs },
+  summaryBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: spacing.xs, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  totalText: { fontSize: 12, color: colors.textSecondary },
+  totalHighlight: { fontSize: 14, fontWeight: '800', color: colors.brand },
+  expandToggleBtn: { backgroundColor: toneColors.brand.bg, paddingHorizontal: spacing.sm, height: 26, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center' },
+  expandToggleText: { fontSize: 11.5, fontWeight: '700', color: colors.brand },
+  expandedContent: { padding: spacing.md, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.md },
+  sectionBox: { backgroundColor: colors.surface, borderRadius: radii.md, padding: spacing.md, borderWidth: 1, borderColor: colors.borderSoft, gap: spacing.xs },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.textPrimary, marginBottom: spacing.xxs },
+  settlementRow: { backgroundColor: colors.bg, padding: spacing.xs, borderRadius: radii.sm, marginBottom: 4 },
+  settlementIdText: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
+  settlementSubText: { fontSize: 11, color: colors.textSecondary },
 });

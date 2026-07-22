@@ -55,6 +55,6 @@ export function ScreenContainer({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  content: { flexGrow: 1 },
+  content: { flexGrow: 1, justifyContent: 'flex-start' },
   padded: { paddingHorizontal: spacing.lg },
 });

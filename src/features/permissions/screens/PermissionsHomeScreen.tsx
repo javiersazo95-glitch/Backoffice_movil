@@ -8,6 +8,8 @@ import { AssignPermissionsView } from '../components/AssignPermissionsView';
 import { UsersListView } from '../components/UsersListView';
 import { FoundersView } from '../components/FoundersView';
 
+import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
+
 type Tab = 'permisos' | 'usuarios' | 'fundador';
 
 export function PermissionsHomeScreen() {
@@ -16,7 +18,11 @@ export function PermissionsHomeScreen() {
 
   return (
     <ScreenContainer padded={false}>
-      <AppHeader title="Gestión de Permisos" onBack={() => navigation.goBack()} />
+      <AppHeader
+        title="Gestión de Permisos"
+        onBack={() => navigation.goBack()}
+        right={<HeaderHomeButton />}
+      />
       <View style={styles.body}>
         <SegmentedTabs
           value={tab}

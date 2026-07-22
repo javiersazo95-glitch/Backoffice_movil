@@ -28,3 +28,5 @@ export { SegmentedTabs } from './SegmentedTabs';
 export type { SegmentedTabOption } from './SegmentedTabs';
 export { PaginationFooter } from './PaginationFooter';
 export { ScrollableTabs } from './ScrollableTabs';
+export { BrandLogo } from './BrandLogo';
+

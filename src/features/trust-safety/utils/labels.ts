@@ -6,6 +6,7 @@ import { AlertSeverity } from '@/types/alert';
 import { AuditModule } from '@/types/audit';
 
 export const MEDIATION_STATUS_LABELS: Record<MediationStatus, string> = {
+  [MediationStatus.EN_DISPUTA]: 'En disputa',
   [MediationStatus.ESPERANDO_VENDEDOR]: 'En disputa',
   [MediationStatus.ESCALADO]: 'En disputa',
   [MediationStatus.EN_MEDIACION]: 'En mediación',
@@ -14,6 +15,7 @@ export const MEDIATION_STATUS_LABELS: Record<MediationStatus, string> = {
 };
 
 export const MEDIATION_STATUS_TONE: Record<MediationStatus, StatusTone> = {
+  [MediationStatus.EN_DISPUTA]: 'warning',
   [MediationStatus.ESPERANDO_VENDEDOR]: 'warning',
   [MediationStatus.ESCALADO]: 'danger',
   [MediationStatus.EN_MEDIACION]: 'violet',

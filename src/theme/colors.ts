@@ -5,23 +5,26 @@
 export const colors = {
   // Marca
   brand: '#0B5EE8',
-  brandDark: '#0846B4',
-  brandSoft: '#EAF2FF',
-  navy: '#0D2136',
-  navyDeep: '#071625',
+  brandDark: '#064FC8',
+  brandSoft: '#F3F8FF',
+  navy: '#0C1D31',
+  navyDeep: '#0E2235',
 
   // Neutros / superficies
-  bg: '#F5F7FA',
+  bg: '#F8FAFC',
+  bgLogin: '#EDEFF3',
   surface: '#FFFFFF',
-  surfaceAlt: '#F7FAFF',
-  border: '#DCE4EF',
+  surfaceAlt: '#F8FAFC',
+  border: '#E3EAF4',
+  borderInput: '#E2E8F0',
   borderSoft: '#EDF2F7',
   overlay: 'rgba(13, 33, 54, 0.48)',
 
   // Texto
   textPrimary: '#0F1B2D',
   textSecondary: '#5B6B84',
-  textTertiary: '#8B98AD',
+  textTertiary: '#94A3B8',
+  textLabel: '#374151',
   textInverse: '#FFFFFF',
 
   // Semántico / estados
@@ -31,8 +34,11 @@ export const colors = {
   warningSoft: '#FFF3DC',
   danger: '#D92D20',
   dangerSoft: '#FFE8E6',
-  info: '#2F80ED',
-  infoSoft: '#EAF2FF',
+  info: '#0B5EE8',
+  infoSoft: '#F3F8FF',
+  infoBannerBg: '#F0F9FF',
+  infoBannerBorder: '#BAE6FD',
+  infoBannerText: '#0369A1',
   violet: '#6F35C8',
   violetSoft: '#EFE7FF',
 
@@ -45,7 +51,7 @@ export const colors = {
 export type StatusTone = 'brand' | 'success' | 'warning' | 'danger' | 'info' | 'violet' | 'neutral';
 
 export const toneColors: Record<StatusTone, { fg: string; bg: string }> = {
-  brand: { fg: colors.brandDark, bg: colors.brandSoft },
+  brand: { fg: colors.brand, bg: colors.brandSoft },
   success: { fg: colors.success, bg: colors.successSoft },
   warning: { fg: colors.warning, bg: colors.warningSoft },
   danger: { fg: colors.danger, bg: colors.dangerSoft },
