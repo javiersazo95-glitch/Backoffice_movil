@@ -145,7 +145,7 @@ export function MediationDetailScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollBody}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.scrollBody}>
         {/* Sección de Evidencias Adjuntas por la Parte Seleccionada */}
         <View style={styles.evidenceSectionBox}>
           <View style={styles.evidenceHeaderRow}>
@@ -443,4 +443,5 @@ const styles = StyleSheet.create({
   previewBox: { backgroundColor: colors.bg, borderRadius: radii.md, padding: spacing.lg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, gap: spacing.xs },
   previewBoxTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginTop: spacing.xs },
   previewBoxSub: { fontSize: 11.5, color: colors.textSecondary, textAlign: 'center' },
+  flex: { flex: 1 },
 });

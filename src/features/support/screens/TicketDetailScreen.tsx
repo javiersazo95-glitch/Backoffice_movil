@@ -155,6 +155,7 @@ export function TicketDetailScreen() {
         <LoadingState />
       ) : (
         <FlatList
+          style={styles.flex}
           data={[...(messages ?? [])].reverse()}
           keyExtractor={(item) => String(item.id)}
           inverted
@@ -411,4 +412,5 @@ const styles = StyleSheet.create({
   composerInput: { ...typography.body, paddingVertical: spacing.sm },
   sendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
   sendButtonDisabled: { opacity: 0.4 },
+  flex: { flex: 1 },
 });

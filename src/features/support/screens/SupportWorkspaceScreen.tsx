@@ -76,7 +76,7 @@ export function SupportWorkspaceScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent}>
         {/* Banner de SLA Crítico */}
         <View style={styles.slaBanner}>
           <Icon name="alert-circle" size={20} color={colors.brand} />
@@ -317,4 +317,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   countBadgeText: { fontSize: 10, fontWeight: '800', color: colors.white },
+  flex: { flex: 1 },
 });

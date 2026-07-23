@@ -35,10 +35,7 @@ export function LoginScreen() {
     >
       <View style={styles.container}>
         <View style={styles.brandGroup}>
-          <BrandLogo size={60} />
-          <Text style={styles.brandTitle}>
-            RepuesTop <Text style={styles.brandHighlight}>BackOffice</Text>
-          </Text>
+          <BrandLogo size={120} variant="full" />
         </View>
 
         <Text style={styles.welcomeTitle}>Bienvenido de nuevo</Text>

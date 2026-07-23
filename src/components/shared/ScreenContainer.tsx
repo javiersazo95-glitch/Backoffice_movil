@@ -33,7 +33,7 @@ export function ScreenContainer({
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.content, padded && styles.padded, style]}>{children}</View>
+    <View style={[styles.flex, styles.content, padded && styles.padded, style]}>{children}</View>
   );
 
   return (
@@ -55,6 +55,7 @@ export function ScreenContainer({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
-  content: { flexGrow: 1, justifyContent: 'flex-start' },
+  content: { flex: 1, flexGrow: 1, justifyContent: 'flex-start' },
   padded: { paddingHorizontal: spacing.lg },
 });
+

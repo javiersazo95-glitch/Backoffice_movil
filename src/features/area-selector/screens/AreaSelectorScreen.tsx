@@ -87,7 +87,7 @@ export function AreaSelectorScreen() {
       {/* Header Superior Móvil */}
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
-          <BrandLogo size={28} />
+          <BrandLogo size={32} variant="mark" />
           <Text style={styles.brandTitle}>BackOffice</Text>
         </View>
 

@@ -59,7 +59,7 @@ export function CustomDrawerContent(props: CustomDrawerContentProps) {
       {/* Header Institucional de Área */}
       <View style={[styles.headerBanner, { paddingTop: Math.max(insets.top, spacing.md) + spacing.xs }]}>
         <View style={styles.brandRow}>
-          <BrandLogo size={24} />
+          <BrandLogo size={32} variant="mark" />
           <View>
             <Text style={styles.areaTitle}>{areaTitle}</Text>
             <Text style={styles.areaSubtitle}>RepuesTop BackOffice</Text>
