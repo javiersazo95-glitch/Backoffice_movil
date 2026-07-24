@@ -14,11 +14,10 @@ import {
   ErrorState,
   Icon,
   LoadingState,
+  MetricCard,
   ScreenContainer,
   showToast,
 } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 import { colors, radii, spacing, toneColors, typography } from '@/theme';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { getCurrentCycleRange } from '../utils/cycle';
@@ -79,10 +78,12 @@ export function PagosScreen() {
   };
 
   return (
-    <ScreenContainer padded={false}>
-      <AppHeader title="Pago a Proveedores / Retiros" onBack={() => navigation.goBack()} right={<HeaderHomeButton />} />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
+        <View style={styles.metricsRow}>
+          <MetricCard label="A pagar" value={pending.length} icon="people-outline" tone="brand" />
+          <MetricCard label="Monto total" value={formatCurrency(pendingTotal)} icon="cash-outline" tone="success" />
+        </View>
         {/* Chips de Pestaña Fijos Arriba */}
         <ScrollView
           horizontal
@@ -230,6 +231,7 @@ export function PagosScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
   quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   quickChip: {

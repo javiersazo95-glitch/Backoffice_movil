@@ -4,9 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import * as adminApi from '@/api/administration';
 import type { Order, OrderStatus } from '@/types/administration';
-import { Badge, Card, EmptyState, ErrorState, Icon, LoadingState, ScreenContainer, SearchBar, StatusBadge } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
+import { Badge, Card, EmptyState, ErrorState, Icon, LoadingState, MetricCard, ScreenContainer, SearchBar, StatusBadge } from '@/components/shared';
 import { colors, radii, spacing, toneColors } from '@/theme';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 
@@ -62,14 +60,22 @@ export function PedidosScreen() {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
+  const ordersList = data?.orders ?? [];
+  const totalOrders = ordersList.length;
+  const receivedOrders = ordersList.filter((o: Order) => o.status === 'Recibido' || o.status === 'Finalizado').length;
+  const shippingOrders = ordersList.filter((o: Order) => o.status === 'Enviado' || o.status === 'Preparando').length;
+
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
   return (
-    <ScreenContainer padded={false}>
-      <AppHeader title="Administración de Pedidos" onBack={() => navigation.goBack()} right={<HeaderHomeButton />} />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
+        <View style={styles.metricsRow}>
+          <MetricCard label="Total pedidos" value={totalOrders} icon="receipt-outline" tone="brand" />
+          <MetricCard label="Recibidos" value={receivedOrders} icon="checkmark-circle-outline" tone="success" />
+          <MetricCard label="En despacho" value={shippingOrders} icon="car-outline" tone="info" />
+        </View>
         {/* Chips de Filtro Rápido Fijos Arriba */}
         <ScrollView
           horizontal
@@ -184,6 +190,7 @@ export function PedidosScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
   quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   quickChip: {

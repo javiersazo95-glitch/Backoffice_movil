@@ -1,30 +1,33 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, toneColors, typography, StatusTone } from '@/theme';
+import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { colors, spacing, toneColors, StatusTone } from '@/theme';
 import { Card } from './Card';
 import { Icon, IconName } from './Icon';
 
 interface MetricCardProps {
   label: string;
   value: string | number;
+  subtitle?: string;
   icon?: IconName;
   tone?: StatusTone;
   onPress?: () => void;
+  style?: ViewStyle;
 }
 
-export function MetricCard({ label, value, icon, tone = 'brand', onPress }: MetricCardProps) {
+export function MetricCard({ label, value, subtitle, icon, tone = 'brand', onPress, style }: MetricCardProps) {
   const palette = toneColors[tone];
   return (
-    <Card onPress={onPress} style={styles.card}>
+    <Card onPress={onPress} style={StyleSheet.flatten([styles.card, style])}>
       <View style={styles.row}>
         {icon ? (
           <View style={[styles.iconWrap, { backgroundColor: palette.bg }]}>
-            <Icon name={icon} size={18} color={palette.fg} />
+            <Icon name={icon} size={15} color={palette.fg} />
           </View>
         ) : null}
         <View style={styles.texts}>
-          <Text style={typography.displaySm}>{value}</Text>
-          <Text style={[typography.bodySm, styles.label]}>{label}</Text>
+          <Text style={styles.valueText} numberOfLines={1}>{value}</Text>
+          <Text style={styles.label} numberOfLines={1}>{label}</Text>
+          {subtitle ? <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
         </View>
       </View>
     </Card>
@@ -32,9 +35,11 @@ export function MetricCard({ label, value, icon, tone = 'brand', onPress }: Metr
 }
 
 const styles = StyleSheet.create({
-  card: { minWidth: 150, flexGrow: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  iconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  texts: { gap: spacing.xxs, flexShrink: 1 },
-  label: { textTransform: 'none', color: colors.textSecondary },
+  card: { flex: 1, minWidth: 0, paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
+  iconWrap: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  texts: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  valueText: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
+  label: { fontSize: 10.5, fontWeight: '700', color: colors.textSecondary },
+  subtitle: { fontSize: 9.5, color: colors.textTertiary, lineHeight: 11 },
 });

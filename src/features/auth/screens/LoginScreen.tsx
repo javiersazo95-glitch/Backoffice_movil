@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '@/context/AuthContext';
 import { BrandLogo, Icon, Input } from '@/components/shared';
 import { colors, radii, spacing } from '@/theme';
@@ -8,8 +17,10 @@ import { colors, radii, spacing } from '@/theme';
 export function LoginScreen() {
   const { login } = useAuth();
   const insets = useSafeAreaInsets();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [keepSession, setKeepSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -23,149 +34,144 @@ export function LoginScreen() {
     setSubmitting(true);
     try {
       await login(email, password);
-    } catch {
-      setError('Credenciales inválidas. Verifica tu correo y contraseña.');
+    } catch (err: any) {
+      if (err?.response?.data?.message) {
+        setError(String(err.response.data.message));
+      } else if (err?.response?.data?.mensaje) {
+        setError(String(err.response.data.mensaje));
+      } else if (err?.response?.status === 403) {
+        setError('Acceso denegado por el servidor API (403 Forbidden / CORS). Verifica la URL en .env.development.');
+      } else if (err?.response?.status === 401 || err?.response?.status === 400) {
+        setError('Credenciales inválidas. Verifica tu correo y contraseña.');
+      } else if (err?.message?.includes('Network Error') || !err?.response) {
+        setError('No se pudo conectar con el servidor API. Verifica tu conexión.');
+      } else {
+        setError('Error al iniciar sesión. Inténtalo nuevamente.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <View style={styles.screenContainer}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: Math.max(insets.top, spacing.xs),
-            paddingBottom: Math.max(insets.bottom, spacing.xs),
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View
+      style={[
+        styles.screenContainer,
+        {
+          paddingTop: Math.max(insets.top, spacing.xs),
+          paddingBottom: Math.max(insets.bottom, spacing.xs),
+          paddingLeft: Math.max(insets.left, spacing.xs),
+          paddingRight: Math.max(insets.right, spacing.xs),
+        },
+      ]}
+    >
+      <StatusBar style="light" />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.mainCard}>
-          {/* Top Banner Vistoso y Colorido */}
+          {/* Banner Superior Vibrante y Colorido */}
           <View style={styles.headerBanner}>
             <View style={styles.decorativeOrb1} />
             <View style={styles.decorativeOrb2} />
+            <View style={styles.decorativeOrb3} />
 
             <View style={styles.badgePill}>
-              <Icon name="shield-checkmark" size={13} color="#38BDF8" />
-              <Text style={styles.badgePillText}>Panel de Control Seguro</Text>
+              <View style={styles.statusDot} />
+              <Icon name="shield-checkmark-outline" size={13} color="#38BDF8" />
+              <Text style={styles.badgePillText}>SISTEMA DE GESTIÓN MÓVIL</Text>
             </View>
 
             <View style={styles.logoWrapper}>
-              <BrandLogo size={105} variant="full" />
+              <BrandLogo size={110} variant="full" />
+            </View>
+
+            <View style={styles.headerTitleGroup}>
+              <Text style={styles.headerWelcomeTitle}>¡Bienvenido de nuevo! 👋</Text>
+              <Text style={styles.headerWelcomeSubtitle}>
+                Panel Administrativo RepuesTop Chile
+              </Text>
             </View>
           </View>
 
-          {/* Cuerpo Principal del Formulario */}
+          {/* Cuerpo Principal del Formulario con Estructura Fija de 2 Hijos */}
           <View style={styles.bodyContent}>
-            <View style={styles.welcomeGroup}>
-              <Text style={styles.welcomeTitle}>¡Bienvenido de nuevo! 👋</Text>
-              <Text style={styles.welcomeSubtitle}>
-                Inicia sesión para gestionar soporte, mediaciones y finanzas corporativas.
-              </Text>
-            </View>
-
-            {/* Chips Destacados de Funciones con Colores */}
-            <View style={styles.featuresRow}>
-              <View style={[styles.featureChip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-                <Icon name="headset" size={14} color={colors.brand} />
-                <Text style={[styles.featureChipText, { color: colors.brand }]}>Soporte</Text>
-              </View>
-
-              <View style={[styles.featureChip, { backgroundColor: '#F5EFFF', borderColor: '#DDD6FE' }]}>
-                <Icon name="scale" size={14} color={colors.violet} />
-                <Text style={[styles.featureChipText, { color: colors.violet }]}>Mediaciones</Text>
-              </View>
-
-              <View style={[styles.featureChip, { backgroundColor: '#EAF8F0', borderColor: '#A7F3D0' }]}>
-                <Icon name="wallet" size={14} color={colors.success} />
-                <Text style={[styles.featureChipText, { color: colors.success }]}>Finanzas</Text>
-              </View>
-            </View>
-
-            {error ? (
-              <View style={styles.errorBanner}>
-                <Icon name="alert-circle" size={18} color="#DC2626" />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            ) : null}
-
-            {/* Campos de Texto y Acciones */}
-            <View style={styles.formGroup}>
-              <Input
-                label="Correo electrónico"
-                placeholder="admin@repuestop.com"
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                leftIcon="mail-outline"
-                value={email}
-                onChangeText={setEmail}
-              />
-
-              <Input
-                label="Contraseña"
-                placeholder="••••••••"
-                secureTextEntry
-                leftIcon="lock-closed-outline"
-                value={password}
-                onChangeText={setPassword}
-              />
-
-              <Pressable
-                style={styles.checkboxRow}
-                onPress={() => setKeepSession((prev) => !prev)}
-                hitSlop={8}
-              >
-                <View style={[styles.checkbox, keepSession && styles.checkboxChecked]}>
-                  {keepSession ? <Icon name="checkmark" size={12} color={colors.white} /> : null}
+            <View style={styles.formWrapper}>
+              {error ? (
+                <View style={styles.errorBanner}>
+                  <Icon name="alert-circle" size={18} color="#DC2626" />
+                  <Text style={styles.errorText}>{error}</Text>
                 </View>
-                <Text style={styles.checkboxLabel}>Mantener sesión iniciada</Text>
-              </Pressable>
+              ) : null}
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.loginBtn,
-                  submitting && styles.loginBtnDisabled,
-                  pressed && styles.loginBtnPressed,
-                ]}
-                onPress={handleSubmit}
-                disabled={submitting}
-              >
-                <Icon name="log-in-outline" size={20} color={colors.white} />
-                <Text style={styles.loginBtnText}>
-                  {submitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-                </Text>
-              </Pressable>
+              {/* Campos de Texto y Acciones */}
+              <View style={styles.formGroup}>
+                <Input
+                  label="Correo electrónico"
+                  placeholder="admin@repuestop.cl"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  leftIcon="mail-outline"
+                  value={email}
+                  onChangeText={setEmail}
+                />
 
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>o continúa con corporativo</Text>
-                <View style={styles.dividerLine} />
+                <Input
+                  label="Contraseña"
+                  placeholder="••••••••"
+                  secureTextEntry={!showPassword}
+                  leftIcon="lock-closed-outline"
+                  rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  onRightIconPress={() => setShowPassword((prev) => !prev)}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+
+                <Pressable
+                  style={styles.checkboxRow}
+                  onPress={() => setKeepSession((prev) => !prev)}
+                  hitSlop={8}
+                >
+                  <View style={[styles.checkbox, keepSession && styles.checkboxChecked]}>
+                    {keepSession ? <Icon name="checkmark" size={12} color={colors.white} /> : null}
+                  </View>
+                  <Text style={styles.checkboxLabel}>Mantener sesión iniciada</Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.loginBtn,
+                    submitting && styles.loginBtnDisabled,
+                    pressed && styles.loginBtnPressed,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <>
+                      <Icon name="log-in-outline" size={20} color={colors.white} />
+                      <Text style={styles.loginBtnText}>Iniciar Sesión</Text>
+                    </>
+                  )}
+                </Pressable>
               </View>
-
-              <Pressable style={styles.googleBtn} disabled>
-                <View style={styles.googleIconCircle}>
-                  <Text style={styles.googleG}>G</Text>
-                </View>
-                <Text style={styles.googleBtnText}>Google Workspace (próximamente)</Text>
-              </Pressable>
             </View>
 
-            {/* Footer de Licencia y Estado Encriptado */}
+            {/* Footer de Licencia y Encriptación */}
             <View style={styles.securityFooter}>
               <View style={styles.securityBadge}>
-                <Icon name="shield-checkmark" size={13} color={colors.success} />
-                <Text style={styles.securityText}>Acceso restringido · Conexión Encriptada</Text>
+                <Icon name="shield-checkmark" size={13} color="#059669" />
+                <Text style={styles.securityText}>Acceso restringido · Conexión SSL Encriptada</Text>
               </View>
               <Text style={styles.copyrightText}>© 2026 RepuesTop Chile · Panel Administrativo</Text>
             </View>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -173,28 +179,27 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#0B132B',
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.xs,
+  keyboardView: {
+    flex: 1,
   },
   mainCard: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: radii.xl,
+    borderRadius: 24,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    elevation: 6,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
   },
   headerBanner: {
     backgroundColor: '#0B5EE8',
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
@@ -204,92 +209,91 @@ const styles = StyleSheet.create({
   },
   decorativeOrb1: {
     position: 'absolute',
-    top: -40,
-    left: -30,
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    top: -50,
+    left: -40,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
   },
   decorativeOrb2: {
     position: 'absolute',
-    bottom: -35,
-    right: -25,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(56, 189, 248, 0.22)',
+    bottom: -45,
+    right: -35,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(56, 189, 248, 0.28)',
+  },
+  decorativeOrb3: {
+    position: 'absolute',
+    top: 20,
+    right: -20,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   badgePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xxs,
-    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(11, 19, 43, 0.5)',
     paddingHorizontal: spacing.md,
     paddingVertical: 5,
     borderRadius: radii.pill,
     marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#38BDF8',
   },
   badgePillText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+    fontSize: 10.5,
+    fontWeight: '800',
     color: '#E0F2FE',
-    letterSpacing: 0.3,
+    letterSpacing: 0.8,
   },
   logoWrapper: {
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: radii.lg,
-    elevation: 4,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowRadius: 10,
+  },
+  headerTitleGroup: {
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  headerWelcomeTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.white,
+    letterSpacing: 0.2,
+    marginBottom: 3,
+  },
+  headerWelcomeSubtitle: {
+    fontSize: 13,
+    color: '#BFDBFE',
+    fontWeight: '500',
   },
   bodyContent: {
     flex: 1,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
     justifyContent: 'space-between',
   },
-  welcomeGroup: {
-    marginBottom: spacing.md,
-  },
-  welcomeTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  welcomeSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 18,
-  },
-  featuresRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-    gap: spacing.xs,
-  },
-  featureChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    height: 34,
-    borderRadius: radii.md,
-    borderWidth: 1,
-  },
-  featureChipText: {
-    fontSize: 11.5,
-    fontWeight: '700',
+  formWrapper: {
+    width: '100%',
   },
   errorBanner: {
     flexDirection: 'row',
@@ -301,7 +305,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   errorText: {
     flex: 1,
@@ -310,13 +314,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   formGroup: {
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginVertical: spacing.xxs,
+    marginTop: spacing.xxs,
+    marginBottom: spacing.xs,
   },
   checkbox: {
     width: 18,
@@ -345,7 +350,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    marginTop: spacing.xs,
+    marginTop: spacing.xxs,
     elevation: 3,
     shadowColor: colors.brand,
     shadowOffset: { width: 0, height: 4 },
@@ -364,72 +369,26 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.white,
   },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginVertical: spacing.sm,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.borderInput,
-  },
-  dividerText: {
-    fontSize: 12,
-    color: colors.textTertiary,
-    fontWeight: '500',
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    height: 44,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderInput,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    opacity: 0.7,
-  },
-  googleIconCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#EA4335',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleG: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: colors.white,
-  },
-  googleBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
   securityFooter: {
     alignItems: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.xs,
     gap: 6,
   },
   securityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#ECFDF5',
     paddingHorizontal: spacing.md,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: radii.pill,
     borderWidth: 1,
-    borderColor: '#DCFCE7',
+    borderColor: '#A7F3D0',
   },
   securityText: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.success,
+    color: '#059669',
   },
   copyrightText: {
     fontSize: 11,
@@ -437,4 +396,3 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-

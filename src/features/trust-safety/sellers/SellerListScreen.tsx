@@ -12,11 +12,10 @@ import {
   ErrorState,
   Icon,
   LoadingState,
+  MetricCard,
   ScreenContainer,
   SearchBar,
 } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 import { colors, radii, spacing, toneColors } from '@/theme';
 import { SELLER_STATUS_LABELS, SELLER_STATUS_TONE, TRUST_LEVEL_LABELS } from '../utils/labels';
 
@@ -46,11 +45,21 @@ export function SellerListScreen() {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  return (
-    <ScreenContainer padded={false}>
-      <AppHeader title="Directorio de Vendedores" onBack={() => navigation.goBack()} right={<HeaderHomeButton />} />
+  const sellers = data?.content ?? [];
+  const activeSellers = sellers.filter((s) => s.status === SellerStatus.APROBADO).length;
+  const activeMediations = sellers.reduce((sum, s) => sum + (s.mediationCount ?? 0), 0);
+  const disputeCount = sellers.reduce((sum, s) => sum + (s.claimsCount ?? 0), 0);
 
+  return (
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
+        {/* Fila de Métricas Rápida sin Scroll Horizontal */}
+        <View style={styles.metricsRow}>
+          <MetricCard label="Activos" value={activeSellers} icon="people-outline" tone="success" />
+          <MetricCard label="Mediaciones" value={activeMediations} icon="shield-outline" tone="brand" />
+          <MetricCard label="En disputa" value={disputeCount} icon="time-outline" tone="warning" />
+        </View>
+
         {/* Chips de Filtro Rápido Fijos Arriba */}
         <ScrollView
           horizontal
@@ -87,10 +96,7 @@ export function SellerListScreen() {
           </Pressable>
         </ScrollView>
 
-        {/* Buscador Integrado */}
-        <View style={styles.searchWrap}>
-          <SearchBar value={search} onChangeText={setSearch} placeholder="Buscar tienda, RUT, ciudad o correo..." />
-        </View>
+        <SearchBar placeholder="Buscar comercio por nombre o RUT..." value={search} onChangeText={setSearch} />
 
         {isLoading ? (
           <LoadingState />
@@ -99,58 +105,47 @@ export function SellerListScreen() {
         ) : (
           <FlatList
             style={{ flex: 1 }}
-            data={data?.content ?? []}
+            data={sellers}
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={styles.listContent}
-            ListEmptyComponent={<EmptyState title="Sin vendedores" description="No hay tiendas para los filtros aplicados." />}
+            ListEmptyComponent={<EmptyState title="Sin resultados" description="No se encontraron comercios para la búsqueda." />}
             renderItem={({ item }) => {
               const isExpanded = expandedId === item.id;
-
               return (
                 <Card style={styles.card}>
-                  {/* Vista Resumida Plegada */}
                   <Pressable style={styles.cardSummaryHeader} onPress={() => toggleExpand(item.id)}>
                     <View style={styles.summaryTopRow}>
                       <View style={styles.storeNameWrap}>
                         <Text style={styles.storeName}>{item.storeName}</Text>
-                        <Text style={styles.storeSubText}>{item.city} · RUT {item.rut}</Text>
+                        <Text style={styles.rutText}>{item.rut} · {item.city}</Text>
                       </View>
                       <Badge label={SELLER_STATUS_LABELS[item.status]} tone={SELLER_STATUS_TONE[item.status]} />
                     </View>
-
                     <View style={styles.summaryBottomRow}>
                       <View style={styles.trustWrap}>
-                        <Icon name="shield-checkmark" size={12} color={colors.success} />
-                        <Text style={styles.trustText}>Confianza {TRUST_LEVEL_LABELS[item.trustLevel]} · {item.rating.toFixed(1)}★</Text>
+                        <Text style={styles.trustLabel}>Score Confianza: <Text style={styles.trustValue}>{item.trustScore}%</Text></Text>
                       </View>
                       <View style={styles.expandToggleBtn}>
-                        <Text style={styles.expandToggleText}>{isExpanded ? 'Ocultar ∧' : 'Ver Tienda ∨'}</Text>
+                        <Text style={styles.expandToggleText}>{isExpanded ? 'Ocultar ∧' : 'Ver Ficha ∨'}</Text>
                       </View>
                     </View>
                   </Pressable>
 
-                  {/* Contenido Desplegable */}
                   {isExpanded ? (
                     <View style={styles.expandedContent}>
                       <View style={styles.sectionBox}>
-                        <Text style={styles.sectionTitle}>🏪 Ficha Resumida de la Tienda</Text>
+                        <Text style={styles.sectionTitle}>📊 Métricas de Desempeño</Text>
                         <View style={styles.infoGrid}>
-                          <Text style={styles.infoText}><Text style={styles.boldText}>Razón Social:</Text> {item.storeName}</Text>
-                          <Text style={styles.infoText}><Text style={styles.boldText}>RUT Empresa:</Text> {item.rut}</Text>
-                          <Text style={styles.infoText}><Text style={styles.boldText}>Ciudad / Ubicación:</Text> {item.city}</Text>
-                          <Text style={styles.infoText}><Text style={styles.boldText}>Índice de Confianza:</Text> {TRUST_LEVEL_LABELS[item.trustLevel]}</Text>
-                          <Text style={styles.infoText}><Text style={styles.boldText}>Reputación en Plataforma:</Text> {item.rating.toFixed(1)} / 5.0 (Calificación alta)</Text>
-                          <Text style={styles.infoText}><Text style={styles.boldText}>Estado de Cuenta:</Text> {SELLER_STATUS_LABELS[item.status]}</Text>
+                          <Text style={styles.infoText}><Text style={styles.boldText}>Reclamos:</Text> {item.claimsCount} · <Text style={styles.boldText}>Mediaciones:</Text> {item.mediationCount}</Text>
+                          <Text style={styles.infoText}><Text style={styles.boldText}>Devoluciones:</Text> {item.returnsCount} · <Text style={styles.boldText}>Tickets abiertos:</Text> {item.openTickets}</Text>
                         </View>
                       </View>
 
-                      <View style={styles.sectionBox}>
-                        <Text style={styles.sectionTitle}>⚡ Gestión de Cuenta</Text>
-                        <Button
-                          label="🏪 Ver Ficha Completa del Vendedor →"
-                          onPress={() => navigation.navigate('SellerDetail', { sellerId: item.id })}
-                        />
-                      </View>
+                      <Button
+                        label="Ver Perfil Completo del Vendedor"
+                        variant="secondary"
+                        onPress={() => navigation.navigate('SellerDetail', { sellerId: item.id })}
+                      />
                     </View>
                   ) : null}
                 </Card>
@@ -165,6 +160,7 @@ export function SellerListScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
   quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   quickChip: {
@@ -177,17 +173,17 @@ const styles = StyleSheet.create({
   quickChipActiveRejected: { backgroundColor: colors.danger, borderColor: colors.danger },
   quickChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   quickChipTextActive: { color: colors.white },
-  searchWrap: { marginBottom: spacing.sm },
-  listContent: { paddingBottom: spacing.huge },
+  listContent: { paddingBottom: spacing.huge, paddingTop: spacing.xs },
   card: { padding: 0, overflow: 'hidden', marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },
   cardSummaryHeader: { padding: spacing.md, backgroundColor: colors.surface },
   summaryTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.xs },
   storeNameWrap: { flex: 1, paddingRight: spacing.sm },
   storeName: { fontSize: 16, fontWeight: '800', color: colors.textPrimary },
-  storeSubText: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  rutText: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
   summaryBottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: spacing.xs, borderTopWidth: 1, borderTopColor: colors.borderSoft },
-  trustWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trustText: { fontSize: 11, color: colors.textTertiary },
+  trustWrap: { flexDirection: 'row', alignItems: 'center' },
+  trustLabel: { fontSize: 12, color: colors.textSecondary },
+  trustValue: { fontSize: 13, fontWeight: '800', color: colors.brand },
   expandToggleBtn: { backgroundColor: toneColors.brand.bg, paddingHorizontal: spacing.sm, height: 26, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center' },
   expandToggleText: { fontSize: 11.5, fontWeight: '700', color: colors.brand },
   expandedContent: { padding: spacing.md, backgroundColor: colors.bg, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.md },

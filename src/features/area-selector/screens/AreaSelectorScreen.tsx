@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '@/context/AuthContext';
@@ -7,62 +7,8 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Role } from '@/types/auth';
 import { RootStackParamList } from '@/navigation/types';
 import { BrandLogo, Icon, IconName, ScreenContainer } from '@/components/shared';
-import { colors, radii, spacing, toneColors } from '@/theme';
+import { colors, radii, spacing } from '@/theme';
 import { ProfileSheet, ProfileSheetHandle } from '../components/ProfileSheet';
-
-type AreaKey = 'administracion' | 'soporte' | 'confianza';
-
-interface AreaCardItem {
-  key: AreaKey;
-  title: string;
-  subtitle: string;
-  description: string;
-  badgeText: string;
-  icon: IconName;
-  route: keyof RootStackParamList;
-  color: string;
-  softBg: string;
-  badgeBg: string;
-}
-
-const areas: AreaCardItem[] = [
-  {
-    key: 'soporte',
-    title: 'Soporte Técnico',
-    subtitle: 'Atención al Cliente y Vendedores',
-    description: 'Mesa de ayuda para responder tickets, incidencias de pago y reportes QA en tiempo real.',
-    badgeText: '🔥 5 Tickets Nuevos',
-    icon: 'headset',
-    route: 'Soporte',
-    color: colors.brand,
-    softBg: '#F0F6FF',
-    badgeBg: toneColors.brand.bg,
-  },
-  {
-    key: 'confianza',
-    title: 'Confianza y Mediación',
-    subtitle: 'Resolución de Casos y Disputas',
-    description: 'Gestión de reclamos, mediación entre comprador/vendedor y aprobación de nuevas tiendas.',
-    badgeText: '⚖️ 14 Casos Activos',
-    icon: 'scale',
-    route: 'Confianza',
-    color: colors.violet,
-    softBg: '#F5EFFF',
-    badgeBg: toneColors.violet.bg,
-  },
-  {
-    key: 'administracion',
-    title: 'Administración Contable',
-    subtitle: 'Finanzas y Gestión de Pagos',
-    description: 'Control de retiros solicitados por vendedores, comprobantes de pago y estado del ciclo.',
-    badgeText: '💰 $482.300 Pendiente',
-    icon: 'wallet',
-    route: 'Administracion',
-    color: colors.success,
-    softBg: '#EAF8F0',
-    badgeBg: toneColors.success.bg,
-  },
-];
 
 export function AreaSelectorScreen() {
   const { user, logout } = useAuth();
@@ -73,22 +19,80 @@ export function AreaSelectorScreen() {
 
   const roleLabel =
     user?.role === Role.SUPER_ADMIN
-      ? 'Administrador'
+      ? 'Super Administrador'
       : user?.role === Role.ADMIN
-      ? 'Contabilidad'
+      ? 'Administrador'
       : user?.role === Role.OPERATOR
       ? 'Operador'
-      : 'Usuario';
+      : 'Backoffice';
 
-  const userName = user?.fullName?.split(' ')[0] ?? 'Usuario';
+  // 4 Tarjetas coloridas en 1 Columna con fondos suaves, bordes vivos e icono gigante máximo
+  const allRows = [
+    {
+      key: 'administracion',
+      title: 'Administración Contable',
+      subtitle: 'Gestión financiera, usuarios y configuración del sistema.',
+      icon: 'wallet-outline' as IconName,
+      route: 'Administracion' as keyof RootStackParamList,
+      color: '#059669',
+      titleColor: '#047857',
+      borderColor: '#10B981',
+      bgCard: '#ECFDF5',
+      iconBg: '#D1FAE5',
+      enabled: isAreaEnabled('administracion', user),
+    },
+    {
+      key: 'soporte',
+      title: 'Soporte Técnico',
+      subtitle: 'Gestión de tickets, casos y atención a vendedores.',
+      icon: 'headset-outline' as IconName,
+      route: 'Soporte' as keyof RootStackParamList,
+      color: '#0284C7',
+      titleColor: '#0369A1',
+      borderColor: '#38BDF8',
+      bgCard: '#F0F9FF',
+      iconBg: '#E0F2FE',
+      enabled: isAreaEnabled('soporte', user),
+    },
+    {
+      key: 'confianza',
+      title: 'Confianza y Mediación',
+      subtitle: 'Revisión, mediación y resolución de casos y disputas.',
+      icon: 'scale-outline' as IconName,
+      route: 'Confianza' as keyof RootStackParamList,
+      color: '#9333EA',
+      titleColor: '#7E22CE',
+      borderColor: '#C084FC',
+      bgCard: '#F5EFFF',
+      iconBg: '#EDE9FE',
+      enabled: isAreaEnabled('confianza', user),
+    },
+    {
+      key: 'permisos',
+      title: 'Gestión de Permisos',
+      subtitle: 'Administración de accesos por correo y rol operativo.',
+      icon: 'shield-checkmark-outline' as IconName,
+      route: 'Permissions' as keyof RootStackParamList,
+      color: '#D97706',
+      titleColor: '#B45309',
+      borderColor: '#F59E0B',
+      bgCard: '#FEF3C7',
+      iconBg: '#FDE68A',
+      enabled: isSuperAdmin,
+    },
+  ];
 
   return (
     <ScreenContainer scroll={false} padded={false}>
-      {/* Header Superior Móvil */}
+      {/* Header Superior */}
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
           <BrandLogo size={32} variant="mark" />
-          <Text style={styles.brandTitle}>BackOffice</Text>
+          <View style={styles.brandTitleWrap}>
+            <Text style={styles.brandTitle}>
+              RepuesTop <Text style={styles.brandAccent}>BackOffice</Text>
+            </Text>
+          </View>
         </View>
 
         <Pressable
@@ -104,92 +108,86 @@ export function AreaSelectorScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.contentScroll} showsVerticalScrollIndicator={false}>
-        {/* Banner de Saludo */}
-        <View style={styles.greetingHeader}>
-          <Text style={styles.greetingTitle}>¡Hola, {userName}! 👋</Text>
-          <Text style={styles.greetingSubtitle}>
-            Selecciona el área de trabajo para operar desde tu celular.
-          </Text>
+      {/* Contenido Principal: 4 Filas Coloridas en 1 Columna (Sin Scroll) */}
+      <View style={styles.mainContainer}>
+        <View style={styles.headerCopy}>
+          <Icon name="grid-outline" size={18} color={colors.brand} />
+          <View style={styles.headerTextGroup}>
+            <Text style={styles.headerCopyTitle}>Accesos principales</Text>
+            <Text style={styles.headerCopySub}>Selecciona un área para comenzar a operar</Text>
+          </View>
         </View>
 
-        {/* Tarjetas de Áreas Móviles */}
-        {areas.map((area) => {
-          const enabled = isAreaEnabled(area.key, user);
-          return (
+        <View style={styles.fourRowsColumn}>
+          {allRows.map((item) => (
             <Pressable
-              key={area.key}
-              disabled={!enabled}
-              onPress={() => navigation.navigate(area.route as never)}
+              key={item.key}
+              disabled={!item.enabled}
+              onPress={() => navigation.navigate(item.route as never)}
               style={({ pressed }) => [
-                styles.moduleCard,
-                !enabled && styles.moduleCardDisabled,
-                pressed && enabled && styles.moduleCardPressed,
+                styles.vibrantCardRow,
+                {
+                  borderColor: item.enabled ? item.borderColor : colors.border,
+                  backgroundColor: item.enabled ? item.bgCard : colors.surfaceAlt,
+                },
+                !item.enabled && styles.cardDisabled,
+                pressed && item.enabled && styles.cardPressed,
               ]}
             >
-              <View style={styles.cardTopRow}>
-                <View style={[styles.iconBox, { backgroundColor: enabled ? area.softBg : colors.borderSoft }]}>
+              <View style={styles.cardCenterLayout}>
+                {/* Icono Máximo Gigante Encasillado */}
+                <View
+                  style={[
+                    styles.giantSquircleBox,
+                    {
+                      borderColor: item.enabled ? item.borderColor : colors.border,
+                      backgroundColor: item.enabled ? item.iconBg : colors.borderSoft,
+                    },
+                  ]}
+                >
                   <Icon
-                    name={enabled ? area.icon : 'lock-closed'}
-                    size={24}
-                    color={enabled ? area.color : colors.textTertiary}
+                    name={item.enabled ? item.icon : 'lock-closed'}
+                    size={46}
+                    color={item.enabled ? item.color : colors.textTertiary}
                   />
                 </View>
-                {enabled ? (
-                  <View style={[styles.badgePill, { backgroundColor: area.badgeBg }]}>
-                    <Text style={[styles.badgePillText, { color: area.color }]}>{area.badgeText}</Text>
-                  </View>
-                ) : (
-                  <View style={styles.disabledPill}>
-                    <Icon name="lock-closed" size={11} color={colors.textTertiary} />
-                    <Text style={styles.disabledPillText}>Sin Acceso</Text>
-                  </View>
-                )}
+
+                {/* Nombre del Área y Subtítulo */}
+                <View style={styles.cardTitleWrap}>
+                  <Text
+                    style={[
+                      styles.vibrantCardTitle,
+                      { color: item.enabled ? item.titleColor : colors.textTertiary },
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.vibrantCardSub,
+                      { color: item.enabled ? item.color : colors.textSecondary },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.subtitle}
+                  </Text>
+                </View>
               </View>
 
-              <Text style={styles.cardTitle}>{area.title}</Text>
-              <Text style={styles.cardSubtitle}>{area.subtitle}</Text>
-              <Text style={styles.cardDesc}>{area.description}</Text>
-
-              <View style={styles.cardBottomRow}>
-                {enabled ? (
-                  <View style={[styles.actionBtn, { backgroundColor: area.color }]}>
-                    <Text style={styles.actionBtnText}>Ingresar al Área</Text>
-                    <Icon name="arrow-forward" size={14} color={colors.white} />
-                  </View>
-                ) : (
-                  <View style={styles.disabledBtn}>
-                    <Text style={styles.disabledBtnText}>Requiere Permisos</Text>
-                  </View>
-                )}
-              </View>
+              {!item.enabled ? (
+                <View style={styles.disabledBadgeAbsolute}>
+                  <Icon name="lock-closed" size={11} color={colors.textTertiary} />
+                  <Text style={styles.disabledBadgeText}>Sin Acceso</Text>
+                </View>
+              ) : null}
             </Pressable>
-          );
-        })}
+          ))}
+        </View>
 
-        {/* Tarjeta de Gestión de Permisos */}
-        {isSuperAdmin ? (
-          <Pressable
-            style={({ pressed }) => [styles.permissionCard, pressed && styles.moduleCardPressed]}
-            onPress={() => navigation.navigate('Permissions')}
-          >
-            <View style={styles.permissionIconBox}>
-              <Icon name="key" size={20} color={colors.warning} />
-            </View>
-            <View style={styles.permissionTexts}>
-              <Text style={styles.permissionTitle}>Gestión de Permisos</Text>
-              <Text style={styles.permissionDesc}>
-                Administrar accesos por correo, área y ranura.
-              </Text>
-            </View>
-            <Icon name="chevron-forward" size={18} color={colors.warning} />
-          </Pressable>
-        ) : null}
-
-        <Text style={styles.footerCopyright}>
-          RepuesTop BackOffice Móvil v1.0
+        <Text style={styles.footerText}>
+          © 2026 RepuesTop Chile · Panel Administrativo
         </Text>
-      </ScrollView>
+      </View>
 
       <ProfileSheet
         ref={profileSheetRef}
@@ -208,7 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
@@ -219,10 +217,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  brandTitleWrap: {
+    justifyContent: 'center',
+  },
   brandTitle: {
     fontSize: 15,
     fontWeight: '800',
     color: colors.textPrimary,
+  },
+  brandAccent: {
+    color: colors.brand,
   },
   profilePill: {
     flexDirection: 'row',
@@ -254,167 +258,112 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  contentScroll: {
+  mainContainer: {
+    flex: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
   },
-  greetingHeader: {
-    marginBottom: spacing.lg,
+  headerCopy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginVertical: spacing.xxs,
   },
-  greetingTitle: {
-    fontSize: 21,
+  headerTextGroup: {
+    flex: 1,
+  },
+  headerCopyTitle: {
+    fontSize: 15,
     fontWeight: '800',
     color: colors.textPrimary,
-    marginBottom: 4,
   },
-  greetingSubtitle: {
-    fontSize: 12.5,
+  headerCopySub: {
+    fontSize: 11,
     color: colors.textSecondary,
-    lineHeight: 18,
   },
-  moduleCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
+  fourRowsColumn: {
+    flex: 1,
+    gap: spacing.xs,
+    marginVertical: spacing.xxs,
+  },
+  vibrantCardRow: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
     elevation: 3,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
   },
-  moduleCardDisabled: {
+  cardDisabled: {
     opacity: 0.6,
   },
-  moduleCardPressed: {
+  cardPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
   },
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  iconBox: {
-    width: 50,
-    height: 50,
-    borderRadius: radii.md,
+  cardCenterLayout: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
-  badgePill: {
-    paddingHorizontal: spacing.md,
-    height: 26,
-    borderRadius: radii.pill,
+  giantSquircleBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.xxs,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  badgePillText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  disabledPill: {
-    flexDirection: 'row',
+  cardTitleWrap: {
     alignItems: 'center',
-    gap: spacing.xxs,
-    backgroundColor: colors.borderSoft,
-    paddingHorizontal: spacing.sm,
-    height: 24,
-    borderRadius: radii.pill,
   },
-  disabledPillText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.textTertiary,
-  },
-  cardTitle: {
-    fontSize: 17,
+  vibrantCardTitle: {
+    fontSize: 16,
     fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  cardSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  cardDesc: {
-    fontSize: 12.5,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: spacing.lg,
-  },
-  cardBottomRow: {
-    marginTop: 'auto',
-  },
-  actionBtn: {
-    height: 42,
-    borderRadius: radii.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  actionBtnText: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  disabledBtn: {
-    height: 40,
-    borderRadius: radii.md,
-    backgroundColor: colors.borderSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabledBtnText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: colors.textTertiary,
-  },
-  permissionCard: {
-    backgroundColor: toneColors.warning.bg,
-    borderWidth: 1,
-    borderColor: colors.warning,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.xs,
-    marginBottom: spacing.lg,
-  },
-  permissionIconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: radii.md,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  permissionTexts: {
-    flex: 1,
-  },
-  permissionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  permissionDesc: {
-    fontSize: 11.5,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  footerCopyright: {
     textAlign: 'center',
-    fontSize: 11,
+  },
+  vibrantCardSub: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 1,
+  },
+  disabledBadgeAbsolute: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.borderSoft,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: radii.pill,
+  },
+  disabledBadgeText: {
+    fontSize: 10,
     fontWeight: '600',
     color: colors.textTertiary,
-    marginTop: spacing.sm,
+  },
+  footerText: {
+    textAlign: 'center',
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: colors.textTertiary,
+    marginVertical: 2,
   },
 });

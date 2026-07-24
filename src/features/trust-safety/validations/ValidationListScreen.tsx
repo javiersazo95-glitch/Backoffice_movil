@@ -1,9 +1,10 @@
 import React, { useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as validationsApi from '@/api/validations';
-import { ValidationStatus, type StoreValidationRequest } from '@/types/validation';
+import { downloadAndShareFile } from '@/api/uploads';
+import { ValidationStatus } from '@/types/validation';
 import {
   Badge,
   Button,
@@ -14,16 +15,21 @@ import {
   Icon,
   Input,
   LoadingState,
+  MetricCard,
   ScreenContainer,
   showToast,
 } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
-import { colors, radii, spacing, toneColors, typography } from '@/theme';
+import { colors, radii, spacing, toneColors } from '@/theme';
 import { formatDateTime } from '@/utils/formatters';
 import { VALIDATION_STATUS_LABELS, VALIDATION_STATUS_TONE } from '../utils/labels';
 
 type QuickStatusFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
+
+interface DocumentTarget {
+  name: string;
+  store: string;
+  url?: string;
+}
 
 export function ValidationListScreen() {
   const navigation = useNavigation<any>();
@@ -31,7 +37,6 @@ export function ValidationListScreen() {
   const [statusFilter, setStatusFilter] = useState<QuickStatusFilter>('ALL');
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [notesMap, setNotesMap] = useState<Record<number, string>>({});
-  const [previewDoc, setPreviewDoc] = useState<{ name: string; store: string } | null>(null);
   const confirmRef = useRef<ConfirmActionSheetHandle>(null);
 
   const { data: storeValidations, isLoading } = useQuery({
@@ -86,15 +91,36 @@ export function ValidationListScreen() {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  return (
-    <ScreenContainer padded={false}>
-      <AppHeader
-        title="Validaciones de Vendedores"
-        onBack={() => navigation.goBack()}
-        right={<HeaderHomeButton />}
-      />
+  const handleOpenDocument = async (doc: DocumentTarget) => {
+    if (!doc.url) {
+      showToast('El vendedor no ha cargado el archivo de este documento aún', 'error');
+      return;
+    }
 
+    try {
+      if (doc.url.startsWith('http')) {
+        await Linking.openURL(doc.url);
+      } else {
+        const cleanName = `${doc.name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        await downloadAndShareFile(doc.url, cleanName);
+      }
+    } catch {
+      showToast('No se pudo abrir el archivo del documento', 'error');
+    }
+  };
+
+  const pendingCount = items.filter((i) => i.status === ValidationStatus.PENDIENTE).length;
+  const approvedCount = items.filter((i) => i.status === ValidationStatus.APROBADA).length;
+  const rejectedCount = items.filter((i) => i.status === ValidationStatus.RECHAZADA || i.status === ValidationStatus.POR_CORREGIR).length;
+
+  return (
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
+        <View style={styles.metricsRow}>
+          <MetricCard label="Pendientes" value={pendingCount} icon="time-outline" tone="warning" />
+          <MetricCard label="Aprobadas" value={approvedCount} icon="checkmark-circle-outline" tone="success" />
+          <MetricCard label="Rechazadas" value={rejectedCount} icon="alert-circle-outline" tone="danger" />
+        </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -190,7 +216,7 @@ export function ValidationListScreen() {
                             </View>
                             <Pressable
                               style={styles.reviewDocBtn}
-                              onPress={() => setPreviewDoc({ name: doc.name, store: item.sellerName })}
+                              onPress={() => void handleOpenDocument({ name: doc.name, store: item.sellerName, url: doc.url })}
                             >
                               <Icon name="eye" size={13} color={colors.brand} />
                               <Text style={styles.reviewDocBtnText}>Revisar</Text>
@@ -248,31 +274,6 @@ export function ValidationListScreen() {
         )}
       </View>
 
-      {previewDoc ? (
-        <Modal visible transparent animationType="fade" onRequestClose={() => setPreviewDoc(null)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle} numberOfLines={1}>{previewDoc.name}</Text>
-                <Pressable onPress={() => setPreviewDoc(null)} hitSlop={10}>
-                  <Icon name="close" size={20} color={colors.textSecondary} />
-                </Pressable>
-              </View>
-              <Text style={styles.modalStoreSub}>{previewDoc.store}</Text>
-              <View style={styles.previewBox}>
-                <Icon name="document-attach" size={48} color={colors.brand} />
-                <Text style={styles.previewBoxTitle}>Documento Oficial Verificado</Text>
-                <Text style={styles.previewBoxSub}>Documento subido correctamente por el vendedor para su revisión.</Text>
-                <View style={styles.validBadge}>
-                  <Icon name="checkmark-circle" size={14} color={colors.success} />
-                  <Text style={styles.validBadgeText}>Documento legible y verificado</Text>
-                </View>
-              </View>
-              <Button label="Cerrar vista previa" variant="secondary" onPress={() => setPreviewDoc(null)} />
-            </View>
-          </View>
-        </Modal>
-      ) : null}
       <ConfirmActionSheet ref={confirmRef} />
     </ScreenContainer>
   );
@@ -280,6 +281,7 @@ export function ValidationListScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
   quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   quickChip: {

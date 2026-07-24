@@ -86,12 +86,7 @@ export function TicketDetailScreen() {
   if (loadingTicket || !ticket) return <LoadingState />;
 
   return (
-    <ScreenContainer padded={false} keyboardAvoiding>
-      <AppHeader
-        title={`#${ticket.externalId}`}
-        onBack={() => navigation.goBack()}
-        right={<HeaderHomeButton />}
-      />
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false} keyboardAvoiding>
 
       {/* Selector Rápido de Estados */}
       <View style={styles.statusBarRow}>

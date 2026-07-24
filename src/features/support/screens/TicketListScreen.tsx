@@ -12,6 +12,7 @@ import {
   ErrorState,
   Icon,
   LoadingState,
+  MetricCard,
   PriorityBadge,
   ScreenContainer,
   SearchBar,
@@ -64,15 +65,19 @@ export function TicketListScreen({ isQa = false }: { isQa?: boolean }) {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  return (
-    <ScreenContainer padded={false}>
-      <AppHeader
-        title={resolvedIsQa ? 'Reportes QA e Incidencias' : 'Bandeja de Tickets de Soporte'}
-        onBack={() => navigation.goBack()}
-        right={<HeaderHomeButton />}
-      />
+  const ticketsList = data?.content ?? [];
+  const openTicketsCount = ticketsList.filter((t) => t.status === 'ABIERTO').length;
+  const inProgressCount = ticketsList.filter((t) => t.status === 'EN_PROCESO').length;
+  const criticalCount = ticketsList.filter((t) => t.priority === 'CRITICA' || t.priority === 'ALTA').length;
 
+  return (
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
+        <View style={styles.metricsRow}>
+          <MetricCard label="Abiertos" value={openTicketsCount} icon="chatbubble-outline" tone="brand" />
+          <MetricCard label="En proceso" value={inProgressCount} icon="time-outline" tone="info" />
+          <MetricCard label="Críticos" value={criticalCount} icon="alert-circle-outline" tone="danger" />
+        </View>
         {/* Chips de Filtro Rápido Fijos Arriba */}
         <ScrollView
           horizontal
@@ -195,6 +200,7 @@ export function TicketListScreen({ isQa = false }: { isQa?: boolean }) {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
   quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   quickChip: {

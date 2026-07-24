@@ -5,6 +5,12 @@ import { ValidationStatus } from '@/types/validation';
 import { AlertSeverity } from '@/types/alert';
 import { AuditModule } from '@/types/audit';
 
+export function normalizeVisibleMediationStatus(status: MediationStatus, mediationStarted?: boolean): MediationStatus {
+  if (status === MediationStatus.ESCALADO) return MediationStatus.ESPERANDO_VENDEDOR;
+  if (status === MediationStatus.EN_MEDIACION && !mediationStarted) return MediationStatus.ESPERANDO_VENDEDOR;
+  return status;
+}
+
 export const MEDIATION_STATUS_LABELS: Record<MediationStatus, string> = {
   [MediationStatus.EN_DISPUTA]: 'En disputa',
   [MediationStatus.ESPERANDO_VENDEDOR]: 'En disputa',
@@ -22,6 +28,18 @@ export const MEDIATION_STATUS_TONE: Record<MediationStatus, StatusTone> = {
   [MediationStatus.RESUELTA]: 'success',
   [MediationStatus.CERRADA]: 'neutral',
 };
+
+export function getMediationDisplayStatus(status: MediationStatus, mediationStarted?: boolean, accountBlocked?: boolean): string {
+  if (accountBlocked) return 'Cuenta Bloqueada';
+  const norm = normalizeVisibleMediationStatus(status, mediationStarted);
+  return MEDIATION_STATUS_LABELS[norm] ?? 'En disputa';
+}
+
+export function getMediationDisplayTone(status: MediationStatus, mediationStarted?: boolean, accountBlocked?: boolean): StatusTone {
+  if (accountBlocked) return 'danger';
+  const norm = normalizeVisibleMediationStatus(status, mediationStarted);
+  return MEDIATION_STATUS_TONE[norm] ?? 'warning';
+}
 
 export const SELLER_STATUS_LABELS: Record<SellerStatus, string> = {
   [SellerStatus.APROBADO]: 'Aprobado',

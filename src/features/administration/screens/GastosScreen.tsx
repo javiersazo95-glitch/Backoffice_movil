@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import * as adminApi from '@/api/administration';
@@ -15,8 +15,6 @@ import {
   MetricCard,
   ScreenContainer,
 } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 import { colors, radii, spacing, toneColors, typography } from '@/theme';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { getCashAllocation, getExpenseTotal, getSettlements } from '../utils/settlements';
@@ -75,9 +73,7 @@ export function GastosScreen() {
   if (isLoading) return <LoadingState />;
 
   return (
-    <ScreenContainer padded={false}>
-      <AppHeader title="Gastos Operacionales" onBack={() => navigation.goBack()} right={<HeaderHomeButton />} />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
         <View style={styles.metricsRow}>
           <MetricCard label="Total gastos" value={formatCurrency(expenseTotal)} icon="receipt-outline" tone="warning" />
@@ -169,7 +165,7 @@ export function GastosScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
-  metricsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   addButton: { marginBottom: spacing.md },
   listContent: { paddingBottom: spacing.huge },
   card: { padding: 0, overflow: 'hidden', marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border },

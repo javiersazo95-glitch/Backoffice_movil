@@ -72,13 +72,7 @@ export function SellerDetailScreen() {
   if (isLoading || !seller) return <LoadingState />;
 
   return (
-    <ScreenContainer padded={false}>
-      <AppHeader
-        title={seller.storeName}
-        onBack={() => navigation.goBack()}
-        right={<Badge label={SELLER_STATUS_LABELS[seller.status]} tone={SELLER_STATUS_TONE[seller.status]} />}
-      />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.tabsWrap}>
         <ScrollableTabs
           value={tab}

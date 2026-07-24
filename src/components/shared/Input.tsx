@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 import { colors, radii, spacing, typography, minTapTarget } from '@/theme';
 import { Icon, IconName } from './Icon';
 
@@ -8,9 +8,22 @@ interface InputProps extends TextInputProps {
   error?: string | null;
   helperText?: string;
   leftIcon?: IconName;
+  rightIcon?: IconName;
+  onRightIconPress?: () => void;
 }
 
-export function Input({ label, error, helperText, leftIcon, style, onFocus, onBlur, ...rest }: InputProps) {
+export function Input({
+  label,
+  error,
+  helperText,
+  leftIcon,
+  rightIcon,
+  onRightIconPress,
+  style,
+  onFocus,
+  onBlur,
+  ...rest
+}: InputProps) {
   const [focused, setFocused] = useState(false);
 
   return (
@@ -41,6 +54,13 @@ export function Input({ label, error, helperText, leftIcon, style, onFocus, onBl
           }}
           {...rest}
         />
+        {rightIcon ? (
+          <View style={styles.iconWrap}>
+            <Pressable onPress={onRightIconPress} hitSlop={8}>
+              <Icon name={rightIcon} size={18} color={colors.textTertiary} />
+            </Pressable>
+          </View>
+        ) : null}
       </View>
       {error ? (
         <Text style={styles.errorText}>{error}</Text>

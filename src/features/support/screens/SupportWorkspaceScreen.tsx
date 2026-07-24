@@ -21,14 +21,14 @@ export function SupportWorkspaceScreen() {
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
   const metrics = {
-    newTickets: data?.newTickets ?? 5,
-    activeTickets: data?.openTickets ?? 23,
-    criticalSla: data?.urgentTickets ?? 3,
-    total: data?.totalTickets ?? 142,
+    newTickets: data?.newTickets ?? 0,
+    activeTickets: data?.openTickets ?? 0,
+    criticalSla: data?.urgentTickets ?? 0,
+    total: data?.totalTickets ?? 0,
   };
 
   return (
-    <ScreenContainer scroll={false} padded={false}>
+    <ScreenContainer edges={['bottom', 'left', 'right']} scroll={false} padded={false}>
       <View style={styles.headerRow}>
         <View style={styles.headerTexts}>
           <Text style={styles.headerTitle}>Soporte Técnico</Text>

@@ -12,16 +12,15 @@ import {
   ErrorState,
   Icon,
   LoadingState,
+  MetricCard,
   ScreenContainer,
 } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 import { colors, radii, spacing, toneColors } from '@/theme';
-import { formatCurrency } from '@/utils/formatters';
+import { formatCurrency, formatDate } from '@/utils/formatters';
 import { getSettlements } from '../utils/settlements';
 import { LiquidationDocumentModal } from '../components/LiquidationDocumentModal';
 
-type Tab = 'EN_LIQUIDACION' | 'LIQUIDADO';
+type Tab = 'PENDIENTE_LIQUIDACION' | 'EN_LIQUIDACION' | 'LIQUIDADO';
 
 interface SellerGroup {
   key: string;
@@ -32,18 +31,27 @@ interface SellerGroup {
   settlements: Settlement[];
 }
 
-function matchRetiro(withdrawals: RetiroAdminResponse[], group: SellerGroup): RetiroAdminResponse | undefined {
-  return withdrawals.find(
-    (retiro) =>
-      (group.sellerEmail && retiro.email === group.sellerEmail) ||
-      (group.sellerTaxId && retiro.rut === group.sellerTaxId) ||
-      retiro.nombreTienda === group.seller,
-  );
+function matchRetiro(withdrawals: RetiroAdminResponse[], target: { seller: string; sellerEmail?: string; sellerTaxId?: string }): RetiroAdminResponse | undefined {
+  const normEmail = target.sellerEmail?.toLowerCase().trim();
+  const normTaxId = target.sellerTaxId?.replace(/[^0-9kK]/g, '').toLowerCase().trim();
+  const normSeller = target.seller?.toLowerCase().trim();
+
+  return withdrawals.find((retiro) => {
+    const rEmail = retiro.email?.toLowerCase().trim();
+    const rTaxId = retiro.rut?.replace(/[^0-9kK]/g, '').toLowerCase().trim();
+    const rSeller = retiro.nombreTienda?.toLowerCase().trim();
+
+    return (
+      (normEmail && rEmail === normEmail) ||
+      (normTaxId && rTaxId === normTaxId) ||
+      (normSeller && rSeller === normSeller)
+    );
+  });
 }
 
 export function LiquidacionesScreen() {
   const navigation = useNavigation<any>();
-  const [tab, setTab] = useState<Tab>('EN_LIQUIDACION');
+  const [tab, setTab] = useState<Tab>('PENDIENTE_LIQUIDACION');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [documentTarget, setDocumentTarget] = useState<RetiroAdminResponse | null>(null);
 
@@ -62,10 +70,28 @@ export function LiquidacionesScreen() {
     [bootstrap],
   );
 
-  const filtered = useMemo(
-    () => settlements.filter((settlement) => settlement.liquidationStatus === tab),
-    [settlements, tab],
-  );
+  // Filtrado según las 3 etapas exactas del flujo de negocio y backend:
+  // 1. PENDIENTE_LIQUIDACION: Pedidos finalizados sin solicitud de retiro del vendedor.
+  // 2. EN_LIQUIDACION: Vendedor solicitó retiro (con solicitud activa).
+  // 3. LIQUIDADO: Pago procesado y completado.
+  const filtered = useMemo(() => {
+    return settlements.filter((settlement) => {
+      const retiro = withdrawals ? matchRetiro(withdrawals, settlement) : undefined;
+      const hasActiveWithdrawal = Boolean(retiro && (retiro.estado === 'SOLICITADO' || retiro.estado === 'EN_PROCESO'));
+      const isPaidOut = Boolean(retiro && retiro.estado === 'PAGADO') || settlement.liquidationStatus === 'LIQUIDADO';
+
+      if (tab === 'PENDIENTE_LIQUIDACION') {
+        return !hasActiveWithdrawal && !isPaidOut && settlement.liquidationStatus !== 'LIQUIDADO';
+      }
+      if (tab === 'EN_LIQUIDACION') {
+        return hasActiveWithdrawal && !isPaidOut;
+      }
+      if (tab === 'LIQUIDADO') {
+        return isPaidOut;
+      }
+      return true;
+    });
+  }, [settlements, withdrawals, tab]);
 
   const groups = useMemo(() => {
     const map = new Map<string, SellerGroup>();
@@ -86,15 +112,31 @@ export function LiquidacionesScreen() {
     return Array.from(map.values());
   }, [filtered]);
 
+  const pendingCount = settlements.filter((s) => {
+    const r = withdrawals ? matchRetiro(withdrawals, s) : undefined;
+    return !r && s.liquidationStatus !== 'LIQUIDADO';
+  }).length;
+  const inLiquidationCount = settlements.filter((s) => {
+    const r = withdrawals ? matchRetiro(withdrawals, s) : undefined;
+    return Boolean(r && (r.estado === 'SOLICITADO' || r.estado === 'EN_PROCESO'));
+  }).length;
+  const paidCount = settlements.filter((s) => {
+    const r = withdrawals ? matchRetiro(withdrawals, s) : undefined;
+    return Boolean(r && r.estado === 'PAGADO') || s.liquidationStatus === 'LIQUIDADO';
+  }).length;
+
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
   return (
-    <ScreenContainer padded={false}>
-      <AppHeader title="Liquidaciones a Vendedores" onBack={() => navigation.goBack()} right={<HeaderHomeButton />} />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
-        {/* Chips de Estado Fijos Arriba */}
+        <View style={styles.metricsRow}>
+          <MetricCard label="Pendientes" value={pendingCount} icon="time-outline" tone="warning" />
+          <MetricCard label="En liquidación" value={inLiquidationCount} icon="document-text-outline" tone="brand" />
+          <MetricCard label="Liquidados" value={paidCount} icon="checkmark-circle-outline" tone="success" />
+        </View>
+        {/* 3 Pestañas de Estado según Backend Web */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -102,18 +144,33 @@ export function LiquidacionesScreen() {
           contentContainerStyle={styles.quickFilterScroll}
         >
           <Pressable
-            style={[styles.quickChip, tab === 'EN_LIQUIDACION' && styles.quickChipActivePending]}
+            style={[styles.quickChip, tab === 'PENDIENTE_LIQUIDACION' && styles.quickChipActiveWarning]}
+            onPress={() => setTab('PENDIENTE_LIQUIDACION')}
+          >
+            <Icon name="time" size={13} color={tab === 'PENDIENTE_LIQUIDACION' ? colors.white : colors.warning} />
+            <Text style={[styles.quickChipText, tab === 'PENDIENTE_LIQUIDACION' && styles.quickChipTextActive]}>
+              ⏳ Pendiente liquidación
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={[styles.quickChip, tab === 'EN_LIQUIDACION' && styles.quickChipActiveInfo]}
             onPress={() => setTab('EN_LIQUIDACION')}
           >
-            <Icon name="time" size={13} color={tab === 'EN_LIQUIDACION' ? colors.white : colors.warning} />
-            <Text style={[styles.quickChipText, tab === 'EN_LIQUIDACION' && styles.quickChipTextActive]}>⏳ En liquidación</Text>
+            <Icon name="document-text" size={13} color={tab === 'EN_LIQUIDACION' ? colors.white : colors.brand} />
+            <Text style={[styles.quickChipText, tab === 'EN_LIQUIDACION' && styles.quickChipTextActive]}>
+              📑 En liquidación
+            </Text>
           </Pressable>
+
           <Pressable
             style={[styles.quickChip, tab === 'LIQUIDADO' && styles.quickChipActiveDone]}
             onPress={() => setTab('LIQUIDADO')}
           >
             <Icon name="checkmark-circle" size={13} color={tab === 'LIQUIDADO' ? colors.white : colors.success} />
-            <Text style={[styles.quickChipText, tab === 'LIQUIDADO' && styles.quickChipTextActive]}>✅ Liquidados</Text>
+            <Text style={[styles.quickChipText, tab === 'LIQUIDADO' && styles.quickChipTextActive]}>
+              ✅ Liquidados
+            </Text>
           </Pressable>
         </ScrollView>
 
@@ -122,7 +179,18 @@ export function LiquidacionesScreen() {
           data={groups}
           keyExtractor={(item) => item.key}
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<EmptyState title="Sin liquidaciones" description="No hay liquidaciones en este estado." />}
+          ListEmptyComponent={
+            <EmptyState
+              title="Sin liquidaciones"
+              description={
+                tab === 'PENDIENTE_LIQUIDACION'
+                  ? 'No hay pedidos finalizados pendientes por solicitar retiro.'
+                  : tab === 'EN_LIQUIDACION'
+                  ? 'No hay solicitudes de retiro activas en proceso de liquidación.'
+                  : 'No hay liquidaciones pagadas registradas.'
+              }
+            />
+          }
           renderItem={({ item }) => {
             const isExpanded = expanded.has(item.key);
             const retiro = withdrawals ? matchRetiro(withdrawals, item) : undefined;
@@ -142,15 +210,32 @@ export function LiquidacionesScreen() {
                 >
                   <View style={styles.summaryTopRow}>
                     <Text style={styles.sellerTitle}>{item.seller}</Text>
-                    <Badge label={tab === 'EN_LIQUIDACION' ? 'Pendiente' : 'Liquidado'} tone={tab === 'EN_LIQUIDACION' ? 'warning' : 'success'} />
+                    <Badge
+                      label={
+                        tab === 'PENDIENTE_LIQUIDACION'
+                          ? 'Pendiente Retiro'
+                          : tab === 'EN_LIQUIDACION'
+                          ? 'En Liquidación'
+                          : 'Liquidado'
+                      }
+                      tone={
+                        tab === 'PENDIENTE_LIQUIDACION'
+                          ? 'warning'
+                          : tab === 'EN_LIQUIDACION'
+                          ? 'info'
+                          : 'success'
+                      }
+                    />
                   </View>
 
                   <Text style={styles.summarySubText}>
-                    {item.settlements.length} transacciones por liquidar
+                    {item.settlements.length} pedidos finalizados · Payout estimado
                   </Text>
 
                   <View style={styles.summaryBottomRow}>
-                    <Text style={styles.totalText}>Monto Payout: <Text style={styles.totalHighlight}>{formatCurrency(item.total)}</Text></Text>
+                    <Text style={styles.totalText}>
+                      Monto Payout: <Text style={styles.totalHighlight}>{formatCurrency(item.total)}</Text>
+                    </Text>
                     <View style={styles.expandToggleBtn}>
                       <Text style={styles.expandToggleText}>{isExpanded ? 'Ocultar ∧' : 'Ver Detalle ∨'}</Text>
                     </View>
@@ -167,7 +252,7 @@ export function LiquidacionesScreen() {
                           <View style={{ flex: 1 }}>
                             <Text style={styles.settlementIdText}>#{settlement.id} · Pedido #{settlement.orderId}</Text>
                             <Text style={styles.settlementSubText}>
-                              Venta total: {formatCurrency(settlement.saleTotal)} · Payout neto: {formatCurrency(settlement.sellerPayout)}
+                              Venta total: {formatCurrency(settlement.saleTotal)} · Comisión RepuesTop: {formatCurrency(settlement.commission)} · Payout neto: {formatCurrency(settlement.sellerPayout)}
                             </Text>
                           </View>
                         </View>
@@ -178,12 +263,21 @@ export function LiquidacionesScreen() {
                       <Text style={styles.sectionTitle}>📄 Documentos de Liquidación (Boleta / Factura)</Text>
                       {retiro ? (
                         <Button
-                          label={retiro.documentoLiquidacionCompleto ? '✅ Boleta/Factura Registrada (Ver/Editar)' : '📄 Emitir / Cargar Boleta o Factura'}
+                          label={
+                            retiro.documentoLiquidacionCompleto
+                              ? '✅ Boleta/Factura Registrada (Ver/Editar)'
+                              : '📄 Emitir / Cargar Boleta o Factura'
+                          }
                           variant={retiro.documentoLiquidacionCompleto ? 'secondary' : 'primary'}
                           onPress={() => setDocumentTarget(retiro)}
                         />
                       ) : (
-                        <Badge label="Sin solicitud de retiro activa" tone="neutral" />
+                        <View style={styles.noWithdrawalBanner}>
+                          <Icon name="information-circle" size={15} color={colors.textSecondary} />
+                          <Text style={styles.noWithdrawalText}>
+                            El vendedor aún no ha iniciado una solicitud de retiro para estos fondos.
+                          </Text>
+                        </View>
                       )}
                     </View>
                   </View>
@@ -201,13 +295,15 @@ export function LiquidacionesScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
   quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   quickChip: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, paddingHorizontal: spacing.md, height: 32,
     borderRadius: radii.pill, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
   },
-  quickChipActivePending: { backgroundColor: colors.warning, borderColor: colors.warning },
+  quickChipActiveWarning: { backgroundColor: colors.warning, borderColor: colors.warning },
+  quickChipActiveInfo: { backgroundColor: colors.brand, borderColor: colors.brand },
   quickChipActiveDone: { backgroundColor: colors.success, borderColor: colors.success },
   quickChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   quickChipTextActive: { color: colors.white },
@@ -228,4 +324,17 @@ const styles = StyleSheet.create({
   settlementRow: { backgroundColor: colors.bg, padding: spacing.xs, borderRadius: radii.sm, marginBottom: 4 },
   settlementIdText: { fontSize: 12, fontWeight: '700', color: colors.textPrimary },
   settlementSubText: { fontSize: 11, color: colors.textSecondary },
+  noWithdrawalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.bg,
+    padding: spacing.xs,
+    borderRadius: radii.sm,
+  },
+  noWithdrawalText: {
+    fontSize: 11.5,
+    color: colors.textSecondary,
+    flex: 1,
+  },
 });

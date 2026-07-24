@@ -33,15 +33,15 @@ export function ResumenScreen() {
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
-  const pendingCount = pending.length || 6;
-  const pendingAmountDisplay = pendingTotal > 0 ? formatCurrency(pendingTotal) : '$482.300';
-  const docsCount = incompleteDocs || 2;
-  const paymentsCount = payments?.length || 14;
-  const lastPaymentAmountDisplay = lastPayment ? formatCurrency(lastPayment.montoTotal) : '$1.240.000';
-  const lastPaymentRetirosCount = lastPayment ? lastPayment.retiros.length : 8;
+  const pendingCount = pending.length;
+  const pendingAmountDisplay = pendingTotal > 0 ? formatCurrency(pendingTotal) : formatCurrency(0);
+  const docsCount = incompleteDocs;
+  const paymentsCount = payments?.length ?? 0;
+  const lastPaymentAmountDisplay = lastPayment ? formatCurrency(lastPayment.montoTotal) : formatCurrency(0);
+  const lastPaymentRetirosCount = lastPayment ? lastPayment.retiros.length : 0;
 
   return (
-    <ScreenContainer scroll={false} padded={false}>
+    <ScreenContainer edges={['bottom', 'left', 'right']} scroll={false} padded={false}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Banner Hero Financiero (Clickeable) */}
         <Pressable style={styles.heroCard} onPress={() => navigation.navigate('Historial de Retiros')}>

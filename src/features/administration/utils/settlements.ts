@@ -15,7 +15,7 @@ function getSettlementId(orderId: string): string {
 /** Deriva las liquidaciones (comisión de servicio por pedido) a partir de pedidos Finalizados. */
 export function getSettlements(orders: Order[], statuses: Record<string, SettlementStatus>): Settlement[] {
   return orders
-    .filter((order) => order.status === 'Finalizado')
+    .filter((order) => order.status === 'Finalizado' || order.status === 'Recibido' || Boolean(order.estadoLiquidacion))
     .map((order) => {
       const subtotal = Number(order.subtotalPublicado ?? order.total);
       const saleTotal = Number(order.total ?? subtotal);

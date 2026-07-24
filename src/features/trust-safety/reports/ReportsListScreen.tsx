@@ -4,8 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import * as reportsApi from '@/api/reports';
 import { Badge, EmptyState, ListItemCard, LoadingState, MetricCard, PaginationFooter, ScreenContainer } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 import { spacing } from '@/theme';
 import { formatDate } from '@/utils/formatters';
 
@@ -24,19 +22,28 @@ export function ReportsListScreen() {
   });
 
   return (
-    <ScreenContainer padded={false}>
-      <AppHeader
-        title="Reportes y Métricas"
-        onBack={() => navigation.goBack()}
-        right={<HeaderHomeButton />}
-      />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
         {summary ? (
           <View style={styles.summaryRow}>
-            <MetricCard label="Total reportes" value={summary.totalReportes} icon="flag-outline" tone="brand" />
-            <MetricCard label="De compradores" value={summary.reportesCompradores} icon="person-outline" tone="info" />
-            <MetricCard label="De vendedores" value={summary.reportesVendedores} icon="storefront-outline" tone="warning" />
+            <MetricCard
+              label="Total reportes"
+              value={summary.totalReportes}
+              icon="flag-outline"
+              tone="brand"
+            />
+            <MetricCard
+              label="Compradores"
+              value={summary.reportesCompradores}
+              icon="person-outline"
+              tone="info"
+            />
+            <MetricCard
+              label="Vendedores"
+              value={summary.reportesVendedores}
+              icon="storefront-outline"
+              tone="warning"
+            />
           </View>
         ) : null}
 
@@ -66,7 +73,7 @@ export function ReportsListScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, paddingHorizontal: spacing.lg },
-  summaryRow: { flexDirection: 'row', gap: spacing.sm, paddingTop: spacing.md, marginBottom: spacing.md },
+  body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
+  summaryRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs, marginTop: spacing.xxs },
   listContent: { paddingBottom: spacing.huge },
 });

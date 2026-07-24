@@ -1,12 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import * as adminApi from '@/api/administration';
 import type { Withdrawal } from '@/types/administration';
 import { Button, Card, EmptyState, ListItemCard, LoadingState, MetricCard, ScreenContainer } from '@/components/shared';
-import { AppHeader } from '@/components/layout/AppHeader';
-import { HeaderHomeButton } from '@/components/layout/HeaderHomeButton';
 import { spacing, typography } from '@/theme';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { getCashAllocation, getPartnerBalances, getSettlements } from '../utils/settlements';
@@ -14,8 +12,8 @@ import { PartnerWithdrawalFormModal } from '../components/PartnerWithdrawalFormM
 
 export function HistorialRetirosScreen() {
   const navigation = useNavigation<any>();
-  const [withdrawals, setWithdrawals] = useState<Withdrawal[] | null>(null);
   const [formVisible, setFormVisible] = useState(false);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[] | null>(null);
 
   const { data: bootstrap, isLoading } = useQuery({
     queryKey: ['admin-bootstrap'],
@@ -23,12 +21,8 @@ export function HistorialRetirosScreen() {
   });
 
   const currentWithdrawals = withdrawals ?? bootstrap?.withdrawals ?? [];
-
-  const commissionTotal = useMemo(() => {
-    if (!bootstrap) return 0;
-    return getSettlements(bootstrap.orders, bootstrap.settlementStatuses ?? {}).reduce((sum, s) => sum + s.commission, 0);
-  }, [bootstrap]);
-
+  const settlements = bootstrap ? getSettlements(bootstrap.orders, bootstrap.settlementStatuses ?? {}) : [];
+  const commissionTotal = settlements.reduce((sum, s) => sum + s.commission, 0);
   const { withdrawalAvailable } = getCashAllocation(commissionTotal);
   const balances = getPartnerBalances(currentWithdrawals, withdrawalAvailable, '', '9999-12-31');
 
@@ -40,13 +34,7 @@ export function HistorialRetirosScreen() {
   if (isLoading) return <LoadingState />;
 
   return (
-    <ScreenContainer padded={false}>
-      <AppHeader
-        title="Historial de Retiros de Socios"
-        onBack={() => navigation.goBack()}
-        right={<HeaderHomeButton />}
-      />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
         <View style={styles.metricsRow}>
           {Object.entries(balances).map(([partner, balance]) => (
@@ -66,11 +54,11 @@ export function HistorialRetirosScreen() {
           data={currentWithdrawals}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<EmptyState title="Sin retiros" description="No hay retiros de socios registrados en esta sesión." />}
+          ListEmptyComponent={<EmptyState title="Sin retiros registrados" description="No hay retiros registrados." />}
           renderItem={({ item }) => (
             <ListItemCard
-              title={`${item.beneficiary} · ${formatCurrency(item.amount)}`}
-              subtitle={item.reason}
+              title={item.beneficiary}
+              subtitle={`${formatCurrency(item.amount)} · ${item.reason ?? ''}`}
               meta={formatDate(item.date)}
               showChevron={false}
             />
@@ -84,9 +72,9 @@ export function HistorialRetirosScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, paddingHorizontal: spacing.lg },
-  metricsRow: { flexDirection: 'row', gap: spacing.sm, paddingTop: spacing.md, marginBottom: spacing.md, flexWrap: 'wrap' },
-  noticeCard: { marginBottom: spacing.md },
-  addButton: { marginBottom: spacing.md },
+  body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
+  metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
+  noticeCard: { marginBottom: spacing.sm },
+  addButton: { marginBottom: spacing.sm },
   listContent: { paddingBottom: spacing.huge },
 });

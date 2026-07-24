@@ -16,14 +16,14 @@ export function TrustDashboardScreen() {
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
-  const trustScore = data?.trustScore ?? 87;
-  const activeSellers = data?.activeSellers ?? 312;
-  const suspendedSellers = data?.suspendedSellers ?? 9;
-  const openMediations = data?.openMediations ?? 14;
-  const validationsPending = data?.validationsPending ?? 21;
+  const trustScore = data?.trustScore ?? 100;
+  const activeSellers = data?.activeSellers ?? 0;
+  const suspendedSellers = data?.suspendedSellers ?? 0;
+  const openMediations = data?.openMediations ?? 0;
+  const validationsPending = data?.validationsPending ?? 0;
 
   return (
-    <ScreenContainer scroll={false} padded={false}>
+    <ScreenContainer edges={['bottom', 'left', 'right']} scroll={false} padded={false}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Banner de Bienvenida y Score */}
         <View style={styles.scoreHeroCard}>
@@ -56,7 +56,7 @@ export function TrustDashboardScreen() {
             <View style={[styles.iconBadge, { backgroundColor: colors.warningSoft }]}>
               <Icon name="time" size={18} color={colors.warning} />
             </View>
-            <Text style={styles.metricValue}>8</Text>
+            <Text style={styles.metricValue}>{openMediations}</Text>
             <Text style={styles.metricLabel}>En disputa</Text>
           </Pressable>
 

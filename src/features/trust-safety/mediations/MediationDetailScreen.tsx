@@ -10,7 +10,12 @@ import { Badge, Button, Icon, LoadingState, ScreenContainer, showToast } from '@
 import { AppHeader } from '@/components/layout/AppHeader';
 import { colors, radii, spacing, toneColors, typography } from '@/theme';
 import { formatCurrency, formatDateTime } from '@/utils/formatters';
-import { MEDIATION_STATUS_LABELS, MEDIATION_STATUS_TONE } from '../utils/labels';
+import {
+  getMediationDisplayStatus,
+  getMediationDisplayTone,
+  MEDIATION_STATUS_LABELS,
+  MEDIATION_STATUS_TONE,
+} from '../utils/labels';
 import { MediationResolveModal } from './MediationResolveModal';
 
 type PartyTab = 'BUYER' | 'SELLER';
@@ -84,18 +89,7 @@ export function MediationDetailScreen() {
   const currentEvidence = activeTab === 'BUYER' ? buyerEvidence : sellerEvidence;
 
   return (
-    <ScreenContainer padded={false} keyboardAvoiding>
-      <AppHeader
-        title={`#${mediation.externalId} · Pedido #${mediation.orderId}`}
-        onBack={() => navigation.goBack()}
-        right={
-          <Badge
-            label={mediation.accountBlocked ? 'Cuenta Bloqueada' : MEDIATION_STATUS_LABELS[mediation.status]}
-            tone={mediation.accountBlocked ? 'danger' : MEDIATION_STATUS_TONE[mediation.status]}
-          />
-        }
-      />
-
+    <ScreenContainer edges={['bottom', 'left', 'right']} padded={false} keyboardAvoiding>
       <View style={styles.topSummaryBar}>
         <View style={styles.summaryInfo}>
           <Text style={styles.summaryPartiesText}>
