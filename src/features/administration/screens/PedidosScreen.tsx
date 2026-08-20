@@ -4,7 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import * as adminApi from '@/api/administration';
 import type { Order, OrderStatus } from '@/types/administration';
-import { Badge, Card, EmptyState, ErrorState, Icon, LoadingState, MetricCard, ScreenContainer, SearchBar, StatusBadge } from '@/components/shared';
+import { Badge, Card, EmptyState, ErrorState, Icon, LoadingState, MetricCard, ScreenContainer, SearchBar, SegmentedTabs, StatusBadge } from '@/components/shared';
+import { PublicidadTab } from '../components/PublicidadTab';
 import { colors, radii, spacing, toneColors } from '@/theme';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 
@@ -27,6 +28,8 @@ export function PedidosScreen() {
   const [search, setSearch] = useState('');
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('ALL');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  /** Ventas de repuestos o compras de publicidad. */
+  const [ordersTab, setOrdersTab] = useState<'pedidos' | 'publicidad'>('pedidos');
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin-bootstrap'],
@@ -65,12 +68,39 @@ export function PedidosScreen() {
   const receivedOrders = ordersList.filter((o: Order) => o.status === 'Recibido' || o.status === 'Finalizado').length;
   const shippingOrders = ordersList.filter((o: Order) => o.status === 'Enviado' || o.status === 'Preparando').length;
 
+  const tabs = (
+    <View style={styles.tabsWrap}>
+      <SegmentedTabs
+        options={[
+          { value: 'pedidos', label: 'Pedidos' },
+          { value: 'publicidad', label: 'Publicidad' },
+        ]}
+        value={ordersTab}
+        onChange={setOrdersTab}
+      />
+    </View>
+  );
+
+  // El tab de publicidad trae sus propios datos, así que no depende de que
+  // haya cargado el bootstrap de pedidos.
+  if (ordersTab === 'publicidad') {
+    return (
+      <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
+        <View style={styles.body}>
+          {tabs}
+          <PublicidadTab />
+        </View>
+      </ScreenContainer>
+    );
+  }
+
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
   return (
     <ScreenContainer edges={['bottom', 'left', 'right']} padded={false}>
       <View style={styles.body}>
+        {tabs}
         <View style={styles.metricsRow}>
           <MetricCard label="Total pedidos" value={totalOrders} icon="receipt-outline" tone="brand" />
           <MetricCard label="Recibidos" value={receivedOrders} icon="checkmark-circle-outline" tone="success" />
@@ -190,6 +220,7 @@ export function PedidosScreen() {
 
 const styles = StyleSheet.create({
   body: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.xs, justifyContent: 'flex-start' },
+  tabsWrap: { marginBottom: spacing.sm },
   metricsRow: { flexDirection: 'row', gap: spacing.xs, marginBottom: spacing.xs },
   quickFilterContainer: { flexGrow: 0, flexShrink: 0, height: 38, marginBottom: spacing.xs },
   quickFilterScroll: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
